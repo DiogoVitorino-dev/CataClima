@@ -1,4 +1,4 @@
-import * as BackgroundFetch from 'expo-background-fetch';
+189e59cef8761ca837947decee8d7ab9import * as BackgroundFetch from 'expo-background-fetch';
 import * as TaskManager from 'expo-task-manager';
 import NetInfo from '@react-native-community/netinfo';
 import UserCitiesDatabase from '../../database/UserCitiesDatabase';
@@ -11,9 +11,9 @@ const getWeatherData = async ({latitude,longitude}:{latitude:number,longitude:nu
   console.log(latitude,longitude,'fetch')
 
   if (isConnected) {
-    const results = await fetch(`https://api.openweathermap.org/data/2.5/weather?lat=${latitude}&lon=${longitude}&appid=189e59cef8761ca837947decee8d7ab9&units=metric&lang=pt_br`)
+    const results = await fetch(`https://api.openweathermap.org/data/2.5/weather?lat=${latitude}&lon=${longitude}&appid=&units=metric&lang=pt_br`)
 
-    const minmax = await fetch(`http://api.openweathermap.org/data/2.5/forecast?lat=${latitude}&lon=${longitude}&cnt=1&appid=189e59cef8761ca837947decee8d7ab9&units=metric`)
+    const minmax = await fetch(`http://api.openweathermap.org/data/2.5/forecast?lat=${latitude}&lon=${longitude}&cnt=1&appid=&units=metric`)
     
 
     const json = await results.json()
