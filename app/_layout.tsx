@@ -1,9 +1,12 @@
 import FontAwesome from '@expo/vector-icons/FontAwesome';
 import { DarkTheme, DefaultTheme, ThemeProvider } from '@react-navigation/native';
 import { useFonts } from 'expo-font';
-import { SplashScreen, Stack } from 'expo-router';
+import { Link, SplashScreen, Stack } from 'expo-router';
 import { useEffect } from 'react';
-import { useColorScheme } from 'react-native';
+import { Pressable, useColorScheme } from 'react-native';
+import Colors from '../constants/Colors';
+import { MaterialIcons } from '@expo/vector-icons';
+import HeaderButton from '../components/HeaderButton';
 
 export {
   // Catch any errors thrown by the Layout component.
@@ -12,12 +15,12 @@ export {
 
 export const unstable_settings = {
   // Ensure that reloading on `/modal` keeps a back button present.
-  initialRouteName: '(tabs)',
+  initialRouteName: 'index',
 };
 
 export default function RootLayout() {
   const [loaded, error] = useFonts({
-    SpaceMono: require('../assets/fonts/SpaceMono-Regular.ttf'),
+    OpenSans: require('../assets/fonts/OpenSans-Regular.ttf'),
     ...FontAwesome.font,
   });
 
@@ -42,8 +45,18 @@ function RootLayoutNav() {
     <>
       <ThemeProvider value={colorScheme === 'dark' ? DarkTheme : DefaultTheme}>
         <Stack>
-          <Stack.Screen name="(tabs)" options={{ headerShown: false }} />
-          <Stack.Screen name="modal" options={{ presentation: 'modal' }} />
+          <Stack.Screen
+            name="index"
+            options={{
+              title: 'CataClima',
+              headerTitleAlign:'center',
+              headerTintColor:'#fff',              
+              headerTransparent:true              
+            }}
+          />
+          <Stack.Screen 
+            name="managerCities" 
+            options={{headerTitle:'' , presentation: 'modal'}} />          
         </Stack>
       </ThemeProvider>
     </>
