@@ -1,9 +1,7 @@
-import { ActivityIndicator, Platform, StyleSheet, useColorScheme } from 'react-native';
+import { Platform, StyleSheet, ScrollView, useColorScheme, RefreshControl, ActivityIndicator } from 'react-native'
 import { useNavigation, useRouter } from 'expo-router';
-import { useCallback, useEffect, useState } from 'react';
-import { LinearGradient } from 'expo-linear-gradient';
-import NetInfo from '@react-native-community/netinfo';
-import AsyncStorage from '@react-native-async-storage/async-storage';
+import { useCallback, useContext, useEffect, useState } from 'react'
+import { LinearGradient } from 'expo-linear-gradient'
 
 import { View } from '../components/Themed';
 import WeatherStatus from '../components/WeatherStatus';
@@ -13,13 +11,14 @@ import WeatherItem from '../components/WeatherItem';
 import LocationService from '../services/location/LocationService';
 import WeatherService from '../services/weather/WeatherService';
 import PermissionModal from '../components/PermissionModal';
-import { OpenTextDefault } from '../components/StyledText';
+import { OpenText, OpenTextDefault } from '../components/StyledText';
 import Button from '../components/Button';
-import {Weather, WeatherProps} from '../models/Weather';
-import UserCitiesDatabase from '../database/UserCitiesDatabase';
 import HeaderButton from '../components/HeaderButton';
 import Flags from '../constants/Flags';
 import CustomTheme from '../constants/CustomTheme';
+import SimpleModal from '../components/SimpleModal';
+import { WeatherContext } from '../context/WeatherContext';
+import UserWeathersDatabase from '../database/UserWeathersDatabase';
 
 function getDayOfWeek(datetime:string) {
   let split = Platform.OS === 'web'? datetime.split(', ') : datetime.split(' ')
@@ -42,96 +41,118 @@ function getDayOfWeek(datetime:string) {
 }
 
 function isNight() {
-  return new Date().getHours() > 18  
+  return new Date().getHours() >= 18  
 }
 
 export default function Home() {
   const colorScheme = useColorScheme()
   const router = useRouter()
   const navigation = useNavigation()
-  const [data, setData] = useState(new Weather({}))
+  
+  const {
+    WeatherData,
+    setWeather
+  } = useContext(WeatherContext)
   const [permissionModalVisible, setPermissionModalVisible] = useState(false)
+  const [NoConnectionModalVisible, setNoConnectionModalVisible] = useState(false)
   const [isLoading, setIsloading] = useState(true)
   const [backgroundGradient, setBackgroundGradient] = useState(
     [Colors[colorScheme ?? 'light'].background,
     Colors[colorScheme ?? 'light'].background]
   )
 
-  useEffect( () => {    
-    verifyConnection()    
-    checkDatabase().finally(() => {
+  // Hooks
+  useEffect( () => {
+    checkDatabase()
+    .then( async weatherStored => {
+      if (weatherStored?.locationName && setWeather){        
+        setWeather(weatherStored)
+        updateWeather(weatherStored.coords.latitude,weatherStored.coords.longitude)
+      }else 
+        await getMyLocationWeather()             
+    })
+    .finally(() => {
       setIsloading(false)
     })
   }, [])  
 
   useEffect(() => {
-    setBackgroundGradient(handleBackgroundGradient(data.weatherMain))
+    setBackgroundGradient(handleBackgroundGradient(WeatherData.weatherMain))    
     navigation.setOptions({ 
-      headerTitle: data.locationName,
+      headerTitle: WeatherData.locationName,
       
       headerLeft:() => HeaderButton({
         href:'/managerCities',
         icon:'add',         
         iconColor:'#fff',
         iconSize:30,
-        style:{marginLeft:5}
-      })
+        style:{marginLeft:10}
+      }),
+
+      headerRight:() => HeaderButton({
+        onPress:updateWeather,
+        icon:'refresh',         
+        iconColor:'#fff',
+        iconSize:30,
+        style:{marginRight:10}
+      })      
    })
-  }, [data])
+  }, [WeatherData])
 
-  const checkDatabase = async () => {
-    const keys = await AsyncStorage.getAllKeys()
-
-    if (keys.length > 0) {
-      let number = Platform.OS === 'web' ? 1 : 0 //workaround
-      const cityStored = await UserCitiesDatabase().getCity(keys[number])
-
-      if (cityStored) {
-        setData(cityStored)          
-        await updateWeather(cityStored.coords)
-      }
-         
-    } else await getMyLocationWeather()
+  // Checks
+  const checkDatabase = async () => {    
+    const cityStored = await UserWeathersDatabase().getCurrent()
+    
+    if (cityStored) return cityStored           
+    return null    
   }
 
-  const verifyConnection = () => NetInfo.fetch()
-
-  const updateWeather = ({latitude, longitude}:{latitude:number, longitude:number}) =>
-    getWeatherInformation({latitude,longitude})
-
-  const handleNewWeather = (newWeather: WeatherProps | null) => 
-  setData(prev => newWeather != null ? new Weather(newWeather) : prev) 
-
-  const getMyLocationWeather = async () => {  
+  // Query WeatherData
+  const getMyLocationWeather = async () => {
+    setIsloading(true)  
     try {     
       const {latitude,longitude} = await LocationService().getMyLocation()
-      await getWeatherInformation({longitude, latitude}) 
+      const currentLocationWeather = 
+        await WeatherService().getWeatherData({longitude, latitude})
+                
+      
+      if(currentLocationWeather && setWeather) setWeather(currentLocationWeather)       
       
     } catch (error:any) {
-      if (error.message === 'user/permission-denied' || error.code === 1)
-        setPermissionModalVisible(true)      
-    }
-  }
 
-  const getWeatherInformation = async (
-    {latitude, longitude} :
-    {latitude:number, longitude:number}) => {
-    setIsloading(true)
-           
-    try {
-      if ((await verifyConnection()).isConnected) {              
-        const weather = await WeatherService()
-          .getWeatherData({longitude, latitude})           
-        handleNewWeather(weather)
-      }
+      if (error === Flags.ErrorFlags.LOCATIONPERMISSIONDENIED || error.code === 1) 
+        setPermissionModalVisible(true) 
 
-    } catch (error) {
-      console.log(error);          
+      else if(error === Flags.ErrorFlags.NOCONNECTION)
+        setNoConnectionModalVisible(true)
+          
     } finally {
       setIsloading(false)
     }
+    
   }
 
+  const updateWeather = (latitude?: number, longitude?: number) => {
+    setIsloading(true)
+    let coords = WeatherData.coords
+
+    if (latitude && longitude) coords = {latitude, longitude}         
+    
+    WeatherService().getWeatherData(coords)
+    .then(updatedWeather => {
+
+      if(updatedWeather && setWeather) setWeather(updatedWeather)
+    })
+
+    .catch(error => {
+      if (error === Flags.ErrorFlags.NOCONNECTION)
+        setNoConnectionModalVisible(true)
+    })
+
+    .finally(() => setIsloading(false))   
+  }
+
+  // Theme control
   const handleBackgroundGradient = (weatherMain:string) => {    
     switch (weatherMain) {
       case Flags.WeatherApiState.SUNNY: {
@@ -146,9 +167,13 @@ export default function Home() {
     Colors[colorScheme ?? 'light'].background]  
   }
 
+  // Navigation
   const gotoManagerCities = () => router.push({pathname:'/managerCities'})
 
+  // Modals
   const ClosePermissionModal = () => setPermissionModalVisible(false)
+
+  const CloseNoConnectionModal = () => setNoConnectionModalVisible(false)
 
   const PermissionModalJSX = useCallback(() => (
     <PermissionModal 
@@ -159,87 +184,114 @@ export default function Home() {
     />
   ),[permissionModalVisible])
 
-  if (isLoading) {
-    return (
-      <View style={{flex:1, alignItems:'center', justifyContent:'center'}}>
-          <ActivityIndicator 
-            size="large" 
-            color='#fff' />
-      </View>
-    )    
-  }
+  const NoConnectionModalJSX = useCallback(() => (
+    <SimpleModal 
+      message='Sem conexão com a internet !'
+      modalVisible={NoConnectionModalVisible} 
+      onCloseModal={CloseNoConnectionModal} />
+    ),[NoConnectionModalVisible])
+
   
-  if(data.locationName) {
-    return (
+  // Viewers 
+  if(WeatherData.locationName || isLoading) {
+    return (      
       <LinearGradient 
         colors={backgroundGradient} 
         start={{x:0,y:0}}
         end={{x:0.5,y:1}}
-        style={styles.container}>
-
-        <OpenTextDefault style={styles.updateTimeText} >
-          Atualizado: {data.datetime}
-        </OpenTextDefault>
-        <WeatherStatus 
-          iconName={data.icon}
-          iconColor='#fff'
-          iconSize={150}
-          separatorColor='#ccc'
-          textColor='#fff'
-          temp={data.temperature + '°'}
-          tempMax={data.maxTemperature + '°'}
-          tempMin={data.minTemperature + '°'}
-          weatherDescription={data.weatherDetail}
+        style={{flex:1}}>
           
-        />
-  
-        <WeatherDetail 
-          dayOfWeek={getDayOfWeek(data.datetime)}
-          textColor='#fff'
-          separatorColor='#ccc'           
-          >          
-            <WeatherItem 
-              iconColor = '#fff'            
-              iconName='sun-thermometer-outline'
-              textColor='#fff'
-              iconSize={30}
-              label='Sensação'
-              value={data.feelsLike + '°c '}
-            />
-            <WeatherItem 
-              iconColor = '#fff'            
-              iconName='water-percent'
-              textColor='#fff'
-              iconSize={30}
-              label='Humidade'
-              value={data.humidity + '%'}
-            />
-            <WeatherItem 
-              iconColor = '#fff'            
-              iconName='weather-windy'
-              textColor='#fff'
-              iconSize={30}
-              label='Vento'
-              value={data.wind + ' km/h'}
-            />
-            <WeatherItem 
-              iconColor = '#fff'            
-              iconName='thermostat-box'
-              textColor='#fff'
-              iconSize={30}
-              label='Pressão'
-              value={data.pressure + ' mbar'}
-            />                               
-        </WeatherDetail>
-        {PermissionModalJSX()}        
-      </LinearGradient>      
+        <ScrollView        
+        contentContainerStyle={{flex:1}}      
+        refreshControl = {
+          <RefreshControl
+          progressViewOffset={50}
+          refreshing={isLoading} 
+          onRefresh={() => updateWeather()}/>      
+        }>
+          {isLoading && 
+          !WeatherData.locationName && 
+          Platform.OS === 'web' ? (
+            <View style={styles.centeredView}>
+                <ActivityIndicator 
+                size="large" 
+                color={Colors[colorScheme ?? 'light'].icon} />
+            </View>
+
+          ) : (
+            <View style={[styles.container,{flex:1,backgroundColor:'transparent'}]}>
+              <OpenTextDefault style={styles.updateTimeText} >
+                Atualizado: {WeatherData.datetime}
+              </OpenTextDefault>
+
+              <WeatherStatus 
+                iconName={WeatherData.icon}
+                iconColor='#fff'
+                iconSize={150}
+                separatorColor='#ccc'
+                textColor='#fff'
+                temp={WeatherData.temperature + '°'}
+                tempMax={WeatherData.maxTemperature + '°'}
+                tempMin={WeatherData.minTemperature + '°'}
+                weatherDescription={WeatherData.weatherDetail}
+                
+              />
+        
+              <WeatherDetail 
+                dayOfWeek={getDayOfWeek(WeatherData.datetime)}
+                textColor='#fff'
+                separatorColor='#ccc'           
+                >          
+                  <WeatherItem 
+                    iconColor = '#fff'            
+                    iconName='sun-thermometer-outline'
+                    textColor='#fff'
+                    iconSize={30}
+                    label='Sensação'
+                    value={WeatherData.feelsLike + '°c '}
+                  />
+                  <WeatherItem 
+                    iconColor = '#fff'            
+                    iconName='water-percent'
+                    textColor='#fff'
+                    iconSize={30}
+                    label='Humidade'
+                    value={WeatherData.humidity + '%'}
+                  />
+                  <WeatherItem 
+                    iconColor = '#fff'            
+                    iconName='weather-windy'
+                    textColor='#fff'
+                    iconSize={30}
+                    label='Vento'
+                    value={WeatherData.wind + ' km/h'}
+                  />
+                  <WeatherItem 
+                    iconColor = '#fff'            
+                    iconName='thermostat-box'
+                    textColor='#fff'
+                    iconSize={30}
+                    label='Pressão'
+                    value={WeatherData.pressure + ' mbar'}
+                  />                               
+              </WeatherDetail>
+            </View>
+          )}
+
+          {PermissionModalJSX()}       
+          {NoConnectionModalJSX()}
+        </ScrollView>       
+      </LinearGradient>            
     )
   } else {    
     return (
       <View style={styles.centeredView}>
-        <OpenTextDefault style={styles.noDataText}>
-          Ainda não escolheu uma cidade?{'\n'}Escolha uma das opções abaixo.
-        </OpenTextDefault>
+        <OpenText style={styles.noDataText}>
+          Ainda não escolheu uma cidade?  
+        </OpenText>
+        <OpenText style={[styles.noDataText,{opacity:0.5,fontSize:16}]}>
+          Escolha uma das opções abaixo.
+        </OpenText>
         <Button 
           label='Usar minha localização' 
           onPress={getMyLocationWeather}
@@ -251,6 +303,7 @@ export default function Home() {
           style={{marginTop:25}}
           borderColor={Colors[colorScheme ?? 'light'].borderColor}/>
         {PermissionModalJSX()}
+        {NoConnectionModalJSX()}
       </View>
     )    
   }  
@@ -258,7 +311,7 @@ export default function Home() {
 
 const styles = StyleSheet.create({
   container: {
-    flex: 1,
+    flex: 1,    
     alignItems: 'center',
     justifyContent:'space-between',
     flexDirection:'column',

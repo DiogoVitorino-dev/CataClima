@@ -1,42 +1,54 @@
-import { StyleSheet, useColorScheme } from 'react-native';
-import { Text, View } from '../components/Themed';
+import {ListRenderItemInfo, StyleSheet, useColorScheme} from 'react-native';
+import {Text, View} from '../components/Themed';
 import Searchbar from '../components/Searchbar';
 import Colors from '../constants/Colors';
-import { useEffect, useState } from 'react';
+import {useContext, useEffect, useState} from 'react';
 import CitiesList from '../components/CitiesList';
-import { useLocalSearchParams, useNavigation } from 'expo-router';
-import UserCitiesDatabase from '../database/UserCitiesDatabase';
+import {useNavigation} from 'expo-router';
+import { WeatherContext } from '../context/WeatherContext';
+
 
 export default function ManagerCities() {
-  const colorScheme = useColorScheme()
-  const navigation = useNavigation()  
-  const [dataList, setDataList] = useState(Array<string>)
-  const [searchText, setSearchText] = useState('')
-  const [selectedCity, setSelectedCity] = useState('')  
- 
+  const colorScheme = useColorScheme();
+  const {getAllWeathersNames,deleteWeatherInDB} = useContext(WeatherContext)
+  const [dataList, setDataList] = useState(Array<string>);
+  const [searchText, setSearchText] = useState('');
+  const [selectedCity, setSelectedCity] = useState('');
+  
+  useEffect(() => {
+    getAllWeathersNames().then(weatherList => setDataList(weatherList))
+  },[])
+
+  const handleSelectedCity = (data:ListRenderItemInfo<string>) => 
+  setSelectedCity(data.item)
+  
+  const handleOnPressDeleteButton = (data:ListRenderItemInfo<string>) => {
+    deleteWeatherInDB(data.item)
+    setDataList(prev => prev.filter(key => key !== data.item))
+  }
+
   return (
     <View style={styles.container}>
       <Text style={[styles.title]}>Gerenciar cidades</Text>
 
       <View style={styles.separator} lightColor="#eee" darkColor="rgba(255,255,255,0.1)" />
 
-      <Searchbar 
-        placeholder = 'Inserir cidades'
-        placeholderTextColor = {Colors[colorScheme ?? 'light'].placeholderText}
-        backgroundColor = {colorScheme === 'light' ? '#FAFAFA' : '#333333'}
-        iconColor = {Colors[colorScheme ?? 'light'].icon}        
-        borderColor = {Colors[colorScheme ?? 'light'].borderColor}
-        textColor = {Colors[colorScheme ?? 'light'].text}        
-        onChangeText = {setSearchText} />          
-      
+      <Searchbar
+        placeholder="Inserir cidades"
+        placeholderTextColor={Colors[colorScheme ?? 'light'].placeholderText}
+        backgroundColor={colorScheme === 'light' ? '#FAFAFA' : '#333333'}
+        iconColor={Colors[colorScheme ?? 'light'].icon}
+        borderColor={Colors[colorScheme ?? 'light'].borderColor}
+        textColor={Colors[colorScheme ?? 'light'].text}
+        onChangeText={setSearchText}
+      />
 
-      <CitiesList 
-        list={dataList} 
-        onPress={setSelectedCity}
-        backgroundColor={Colors[colorScheme ?? 'light'].background}
-        itemTextColor = {Colors[colorScheme ?? 'light'].text}
-        itemBorderColor = {Colors[colorScheme ?? 'light'].borderColor}
-      /> 
+      <CitiesList
+        list={dataList}
+        onPressItem={handleSelectedCity}
+        onPressDeleteButton = {handleOnPressDeleteButton}
+        showDeleteButton={searchText ? false : true}        
+      />
     </View>
   );
 }
@@ -44,9 +56,9 @@ export default function ManagerCities() {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    flexDirection:'column',
-    alignItems:'center',
-    padding:18
+    flexDirection: 'column',
+    alignItems: 'center',
+    padding: 18,
   },
   title: {
     fontSize: 26,
