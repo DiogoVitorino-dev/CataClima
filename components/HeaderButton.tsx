@@ -20,10 +20,19 @@ export default function HeaderButton({
   style?: StyleProp<TextStyle>;
 }) {
   return (
-    <Link href={{pathname: href, params: params}} style={style} asChild>
+    <Link 
+      href={{pathname: href, params: params}} 
+      style={style} 
+      asChild
+    >
       <Pressable onPress={() => onPress ? onPress() : null}>
         {({pressed}) => (
-          <MaterialIcons name={icon} size={iconSize} color={iconColor} style={{opacity: pressed ? 0.5 : 1}} />
+          <MaterialIcons 
+            name={icon} 
+            size={iconSize} 
+            color={iconColor} 
+            style={{opacity: pressed ? 0.5 : 1}} 
+          />
         )}
       </Pressable>
     </Link>

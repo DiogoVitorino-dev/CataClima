@@ -1,34 +1,42 @@
-import {Pressable, StyleProp, StyleSheet, ViewStyle} from 'react-native';
+import {Pressable, StyleProp, StyleSheet, ViewStyle, useColorScheme} from 'react-native';
 import {View} from '../components/Themed';
 import {OpenText} from './StyledText';
+import Colors from '../constants/Colors';
 
 export default function Button({
   label,
-  borderColor,
   disabled,
   onPress,
   style,
 }: {
-  label: string;
-  borderColor?: string;
+  label: string;  
   disabled?: boolean;
   onPress: Function;
   style?: StyleProp<ViewStyle>;
 }) {
+  const colorScheme = useColorScheme()
+
   return (
-    <View
+    
+    <View 
       style={[
         styles.container,
-        style,
-        {
-          borderColor: borderColor || '#D4D4D4',
-          borderWidth: StyleSheet.hairlineWidth,
-        },
+        style,{
+        borderColor:Colors[colorScheme ?? 'light'].borderColor,
+        borderWidth:StyleSheet.hairlineWidth
+      }
       ]}
       lightColor="#FAFAFA"
       darkColor="#1A1A1A">
-      <Pressable style={styles.button} onPress={() => onPress()} disabled={disabled}>
-        {({pressed}) => <OpenText style={[styles.label, {opacity: pressed ? 0.5 : 1}]}>{label}</OpenText>}
+      <Pressable 
+        style={styles.button} 
+        onPress={() => onPress()} disabled={disabled}>          
+        {({pressed}) => (
+          <OpenText 
+            style={[styles.label, {opacity: pressed ? 0.5 : 1}]}>
+            {label}
+          </OpenText>
+        )}
       </Pressable>
     </View>
   );

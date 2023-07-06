@@ -1,6 +1,7 @@
 import * as Location from 'expo-location';
 import {Platform} from 'react-native';
 import Flags from '../../constants/Flags';
+import { CoordinatesProps } from '../../constants/Interfaces';
 
 // Permissions
 const requestPermissions = async () => {
@@ -12,10 +13,12 @@ export default function LocationService() {
     if (Platform.OS !== 'web') {
       const permission = await requestPermissions();
       
-      if (!permission) throw Flags.ErrorFlags.LOCATIONPERMISSIONDENIED
+      if (!permission) throw Flags.errors.LOCATIONPERMISSIONDENIED
     }
 
-    return (await Location.getCurrentPositionAsync()).coords;
+    const coords:CoordinatesProps = (await Location.getCurrentPositionAsync()).coords
+
+    return coords
   };
 
   return {getMyLocation};

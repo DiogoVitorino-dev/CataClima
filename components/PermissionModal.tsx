@@ -16,7 +16,12 @@ export default function PermissionModal({
 }) {
   const colorScheme = useColorScheme();
   return (
-    <Modal animationType="fade" transparent={true} visible={isModalVisible} onRequestClose={() => onRequestClose()}>
+    <Modal 
+      animationType="fade" 
+      transparent={true} 
+      visible={isModalVisible} 
+      onRequestClose={() => onRequestClose()}
+    >
       <View style={styles.centeredView}>
         <View
           style={[
@@ -29,7 +34,10 @@ export default function PermissionModal({
             CataClima necessita da sua permissão para usar o seu local e entregar a previsão do tempo da sua cidade.
           </Text>
           {Platform.OS === 'web' ? (
-            <Text style={[styles.modalText, {fontSize: 16, opacity: 0.8}]}>
+            <Text 
+              style={[
+                styles.modalText, 
+              {fontSize: 16, opacity: 0.8}]}>
               Recarregue a página, caso necessário, verifique a permissão de localização do seu navegador.
             </Text>
           ) : null}
