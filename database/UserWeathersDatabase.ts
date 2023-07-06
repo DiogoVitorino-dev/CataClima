@@ -1,30 +1,20 @@
 import AsyncStorage from '@react-native-async-storage/async-storage';
-import {Weather, WeatherProps} from '../models/Weather';
+import { InitialWeatherProps, WeatherProps } from '../constants/Interfaces';
 
 export default function UserWeathersDatabase() {
-  const addWeatherInDB = async (newWeather: WeatherProps) => {
+  const addWeatherDB = async (newWeather: WeatherProps) => {
     try {
-        const current = await getCurrent()
-        
-        
-            
-        //If Current item was created but it's empty or it's receiving new data for it
-        if(
-          !current.locationName || 
-          current.locationName === newWeather.locationName
-        ) 
-            AsyncStorage.mergeItem('current',JSON.stringify(newWeather))
 
         // if already exists, merge
-        if (await checkIsAlreadyInDB(newWeather.locationName))
+        if (await checkIsAlreadyInDB(newWeather.id))
           AsyncStorage.mergeItem(
-            newWeather.locationName,
-            JSON.stringify(newWeather)
-          )                
+            newWeather.id,
+            JSON.stringify(newWeather).trim()
+          )
         else
           AsyncStorage.setItem(
-            newWeather.locationName,
-            JSON.stringify(newWeather)
+            newWeather.id,
+            JSON.stringify(newWeather).trim()
           )             
     
     } catch (e) {
@@ -32,70 +22,84 @@ export default function UserWeathersDatabase() {
     }
   };
 
-  const getWeatherOnDB = async (locationName: string) => {
-    if (locationName) {
-      try {
-        const weatherStored = await AsyncStorage.getItem(locationName.toLocaleLowerCase());
+  const updateWeatherDB = async (weatherUpdated:WeatherProps) => {
+    if(await checkIsAlreadyInDB(weatherUpdated.id))
+      AsyncStorage.mergeItem(weatherUpdated.id,JSON.stringify(weatherUpdated))
+  }
 
-        if (weatherStored !== null) return new Weather(JSON.parse(weatherStored));
-      } catch (e) {        
-        console.log(e, 'UserWeathersDatabase/getWeatherOnDB');
-      }
-    }
-  };
-  
-  const deleteWeatherInDB = async (locationName:string) => {
-    const currentWeather = await getCurrent()
+  const getWeatherDB = async (id: string) => {
+    const weatherStored = await AsyncStorage.getItem(id);
+    if (weatherStored !== null) return JSON.parse(weatherStored.trim()) as WeatherProps;
+  }; 
+
+  const deleteWeatherDB = async (id:string) => {
+    const currentWeather = await getCurrentWeatherID()
     
-    if (currentWeather?.locationName === locationName) {
-      const weathersStored = await getAllWeathersNames()
-      const newcurrentWeather = await getWeatherOnDB(weathersStored[0]) || new Weather({})
-      setCurrent(newcurrentWeather) 
+    if (currentWeather === id) {
+      const weathersStored = await getAllWeathersDB()     
+
+      setCurrent(weathersStored[0]?.id || '') 
     }
 
-    AsyncStorage.removeItem(locationName)
+    AsyncStorage.removeItem(id)
   }
 
-  const checkIsAlreadyInDB = async (key:string) => 
-      (await AsyncStorage.getAllKeys()).includes(key)
+  const getAllWeathersDB = async () => {
+    let ids = await AsyncStorage.getAllKeys(); 
+    ids = ids.filter(key => 
+      key !== 'currentWeatherID' && 
+      key !== 'EXPO_CONSTANTS_INSTALLATION_ID'
+    )    
 
-  const getCurrent = async () => {  
-    const currentValue = await AsyncStorage.getItem('current')
+    const weathers = await AsyncStorage.multiGet(ids)     
 
-    if(currentValue) 
-      return JSON.parse(currentValue) as WeatherProps
-    else {
-      createCurrent()
-      return new Weather({})
-    }
+    return weathers.map(([key,value]) => value 
+    ? JSON.parse(value.trim()) as WeatherProps 
+    : InitialWeatherProps)
+  }; 
+
+  const getCurrentWeatherID = async () => {  
+    const currentWeatherId = await AsyncStorage.getItem('currentWeatherID')
+
+    if(currentWeatherId) return currentWeatherId 
+    return await createCurrent()
   };
   
-  const setCurrent =  (newCurrent:WeatherProps) => 
-    AsyncStorage.setItem('current', JSON.stringify(newCurrent))
-  
+  const setCurrentWeatherID = async (newID:string) => {
+    try {  
+      console.log(newID)    
+      await AsyncStorage.mergeItem('currentWeatherID',newID.trim())
+      
+    } catch (error:any) {      
+    }
+    
+    return newID
+  }
 
+  const checkIsAlreadyInDB = async (id:string) => 
+      (await AsyncStorage.getAllKeys()).includes(id)
+  
   const createCurrent = async () => {
-      if (!await checkIsAlreadyInDB('current'))
-        setCurrent(new Weather({}))                  
+    if (!await checkIsAlreadyInDB('currentWeatherID'))
+      await setCurrent('')
+      return ''
   }
 
-  const getAllWeathersNames = async () => {
-    const cities = await AsyncStorage.getAllKeys();
-    return cities.filter(key => 
-      key !== 'current' && 
-      key !== 'EXPO_CONSTANTS_INSTALLATION_ID')
-  };
+  const setCurrent =  (id:string) => 
+    AsyncStorage.setItem('currentWeatherID', id)  
 
   return {
-    addWeatherInDB, 
-    getWeatherOnDB,
-    deleteWeatherInDB, 
-    getCurrent, 
-    getAllWeathersNames
+    addWeatherDB, 
+    getWeatherDB,
+    updateWeatherDB,
+    deleteWeatherDB, 
+    getCurrentWeatherID,
+    setCurrentWeatherID,
+    getAllWeathersDB
 };
 }
 
 export interface UserWeathersDatabasePublicProps {  
-  deleteWeatherInDB: (locationName:string) => Promise<void>  
+  deleteWeatherInDB: (id:string) => Promise<void>  
   getAllWeathersNames: () => Promise<string[]>
 }

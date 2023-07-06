@@ -1,35 +1,27 @@
-import {OpenTextDefault} from './StyledText';
 import {StyleProp, StyleSheet, View, ViewStyle} from 'react-native';
 import {MaterialCommunityIcons} from '@expo/vector-icons';
+import WeatherText from './WeatherText';
 
 export default function WeatherItem({
-  iconName,
-  iconColor,
+  iconName,  
   iconSize,
-  label,
-  textColor,
+  label,  
   value,
   style,
 }: {
-  iconName: any;
-  iconColor: string;
+  iconName: any;  
   iconSize: number;
-  label: string;
-  textColor: string;
+  label: string;  
   value: string;
   style?: StyleProp<ViewStyle>;
 }) {
   return (
     <View style={[styles.container, style]}>
       <View>
-        <MaterialCommunityIcons name={iconName} color={iconColor} size={iconSize} />
+        <MaterialCommunityIcons name={iconName} color='#fff' size={iconSize} />
       </View>
-      <OpenTextDefault numberOfLines={1} adjustsFontSizeToFit style={[styles.label, {color: textColor}]}>
-        {label}
-      </OpenTextDefault>
-      <OpenTextDefault numberOfLines={1} adjustsFontSizeToFit style={[styles.value, {color: textColor}]}>
-        {value}
-      </OpenTextDefault>
+      <WeatherText text={label} style={styles.label} />
+      <WeatherText text={value} style={styles.value} /> 
     </View>
   );
 }
@@ -47,9 +39,11 @@ const styles = StyleSheet.create({
 
   label: {
     fontSize: 12,
+    color:'#fff'
   },
 
   value: {
     fontSize: 14,
+    color:'#fff'
   },
 });

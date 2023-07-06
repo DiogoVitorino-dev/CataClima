@@ -1,31 +1,38 @@
-import {ListRenderItemInfo, StyleSheet, useColorScheme} from 'react-native';
+import {StyleSheet, useColorScheme} from 'react-native';
 import {Text, View} from '../components/Themed';
 import Searchbar from '../components/Searchbar';
 import Colors from '../constants/Colors';
-import {useContext, useEffect, useState} from 'react';
-import CitiesList from '../components/CitiesList';
-import {useNavigation} from 'expo-router';
-import { WeatherContext } from '../context/WeatherContext';
+import { useEffect, useState } from 'react';
+import CitiesList from '../components/managerCities/CitiesList';
+import { City, ICity } from 'country-state-city';
+import { useAppSelector } from '../redux/hooks';
+import { selectAllWeathers } from '../redux/weather/WeatherSlice';
 
+
+const searchCities = async (
+  searchText:string,
+  ignoreCities:string[] = []
+) => {      
+  const reg = new RegExp(`^${searchText}`,'i')
+  return City.getAllCities()
+  .filter(city => city.name.match(reg) && !ignoreCities.includes(city.name))
+}
 
 export default function ManagerCities() {
   const colorScheme = useColorScheme();
-  const {getAllWeathersNames,deleteWeatherInDB} = useContext(WeatherContext)
-  const [dataList, setDataList] = useState(Array<string>);
   const [searchText, setSearchText] = useState('');
-  const [selectedCity, setSelectedCity] = useState('');
+  const [searchResult, setSearchResult] = useState(Array<ICity>);
+  const allWeathersNames = useAppSelector(state => 
+    selectAllWeathers(state).map(weather => weather.city)
+  )
+
+  const serchTextChanged = (newText:string) => setSearchText(newText)
   
   useEffect(() => {
-    getAllWeathersNames().then(weatherList => setDataList(weatherList))
-  },[])
-
-  const handleSelectedCity = (data:ListRenderItemInfo<string>) => 
-  setSelectedCity(data.item)
-  
-  const handleOnPressDeleteButton = (data:ListRenderItemInfo<string>) => {
-    deleteWeatherInDB(data.item)
-    setDataList(prev => prev.filter(key => key !== data.item))
-  }
+    if(searchText)   
+      searchCities(searchText,allWeathersNames).then(result => setSearchResult(result))
+    else setSearchResult([])
+  },[searchText])
 
   return (
     <View style={styles.container}>
@@ -40,14 +47,11 @@ export default function ManagerCities() {
         iconColor={Colors[colorScheme ?? 'light'].icon}
         borderColor={Colors[colorScheme ?? 'light'].borderColor}
         textColor={Colors[colorScheme ?? 'light'].text}
-        onChangeText={setSearchText}
+        onChangeText={serchTextChanged}
       />
 
       <CitiesList
-        list={dataList}
-        onPressItem={handleSelectedCity}
-        onPressDeleteButton = {handleOnPressDeleteButton}
-        showDeleteButton={searchText ? false : true}        
+        searchResultList={searchResult}      
       />
     </View>
   );

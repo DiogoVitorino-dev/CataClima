@@ -16,30 +16,35 @@ export default function SimpleModal({
 }) {
   const colorScheme = useColorScheme()
   return (
-    <Modal 
+    <Modal       
     animationType="slide" 
     transparent={true} 
-    visible={modalVisible} 
-    onRequestClose={() => onCloseModal()} 
+    visible={modalVisible}
+    onRequestClose={() => onCloseModal()}
     >
-      <View style={styles.centeredView} lightColor="transparent" darkColor="transparent">
-        <View style={styles.modalView}>
-          <OpenText style={styles.modalText}>{message}</OpenText>
-          <Pressable style={[styles.button]} onPress={() => onCloseModal()}>
-            <MaterialCommunityIcons 
-            name="close" 
-            size={20} 
-            color={Colors[colorScheme ?? 'light'].icon}/>
-          </Pressable>
+      <Pressable style={{flex:1}} onPress={() => onCloseModal()}>
+        <View style={styles.centeredView} lightColor="transparent" darkColor="transparent">
+          <View style={[styles.modalView,{
+          borderColor:Colors[colorScheme ?? 'light'].borderColor,
+          borderWidth:StyleSheet.hairlineWidth
+          }]}>
+            <OpenText style={styles.modalText}>{message}</OpenText>
+            <Pressable focusable style={[styles.button]} onPress={() => onCloseModal()}>
+              <MaterialCommunityIcons 
+              name="close" 
+              size={20} 
+              color={Colors[colorScheme ?? 'light'].icon}/>
+            </Pressable>
+          </View>
         </View>
-      </View>
+      </Pressable>
     </Modal>
   );
 }
 
 const styles = StyleSheet.create({
   centeredView: {
-    flex: 1,
+    flex:1,       
     flexDirection: 'column',
     justifyContent: 'flex-end',
     alignItems: 'center',
@@ -47,10 +52,10 @@ const styles = StyleSheet.create({
   modalView: {
     flexDirection: 'row',
     justifyContent: 'space-between',
+    alignItems:'center',
     margin: 20,
     borderRadius: 20,
-    paddingHorizontal: 10,
-    alignItems: 'center',
+    paddingHorizontal: 10,    
     shadowColor: '#000',
     shadowOffset: {
       width: 0,
@@ -61,7 +66,7 @@ const styles = StyleSheet.create({
     elevation: 5,
   },
   button: {
-    padding: 10,
+    margin: 10,
     elevation: 2,
   },
   textStyle: {

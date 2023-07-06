@@ -1,10 +1,6 @@
-import React, {useState} from 'react';
-import {Platform, StyleSheet, TextInput} from 'react-native';
-
-import Colors from '../constants/Colors';
-import {ExternalLink} from './ExternalLink';
-import {OpenText} from './StyledText';
-import {Text, View} from './Themed';
+import React from 'react';
+import {StyleSheet, TextInput} from 'react-native';
+import {View} from './Themed';
 import {MaterialIcons} from '@expo/vector-icons';
 
 // caretColor: cursorColor WEB fix
@@ -24,7 +20,7 @@ export default function Searchbar({
   backgroundColor?: string;
   borderColor: string;
   textColor: string;
-  onChangeText: any;
+  onChangeText: Function;
 }) {
   return (
     <View
@@ -36,14 +32,19 @@ export default function Searchbar({
           borderColor: borderColor,
         },
       ]}>
-      <MaterialIcons name="search" color={iconColor} size={20} style={styles.icon} />
+      <MaterialIcons 
+        name="search" 
+        color={iconColor} 
+        size={20} 
+        style={styles.icon} 
+      />
       <TextInput
         placeholder={placeholder}
         placeholderTextColor={placeholderTextColor}
         inputMode="text"
         cursorColor={textColor}
         style={[styles.input, {color: textColor}]}
-        onChangeText={onChangeText}
+        onChangeText={text => onChangeText(text)}
       />
     </View>
   );

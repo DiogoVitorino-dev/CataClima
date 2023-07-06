@@ -1,170 +1,231 @@
-import { Platform, StyleSheet, ScrollView, useColorScheme, RefreshControl, ActivityIndicator } from 'react-native'
-import { useNavigation, useRouter } from 'expo-router';
-import { useCallback, useContext, useEffect, useState } from 'react'
+import { 
+  StyleSheet, 
+  ScrollView, 
+  useColorScheme, 
+  RefreshControl
+} from 'react-native'
+import { useLocalSearchParams, useNavigation, useRouter } from 'expo-router';
+import { useCallback, useEffect, useState } from 'react'
 import { LinearGradient } from 'expo-linear-gradient'
+import { parseISO } from 'date-fns';
 
-import { View } from '../components/Themed';
-import WeatherStatus from '../components/WeatherStatus';
-import Colors from '../constants/Colors';
-import WeatherDetail from '../components/WeatherDetail';
-import WeatherItem from '../components/WeatherItem';
 import LocationService from '../services/location/LocationService';
 import WeatherService from '../services/weather/WeatherService';
+
+import Colors from '../constants/Colors';
+import { CoordinatesProps } from '../constants/Interfaces';
+
+import { View } from '../components/Themed';
+import WeatherDetail from '../components/home/WeatherDetail';
 import PermissionModal from '../components/PermissionModal';
-import { OpenText, OpenTextDefault } from '../components/StyledText';
-import Button from '../components/Button';
 import HeaderButton from '../components/HeaderButton';
 import Flags from '../constants/Flags';
 import CustomTheme from '../constants/CustomTheme';
 import SimpleModal from '../components/SimpleModal';
-import { WeatherContext } from '../context/WeatherContext';
-import UserWeathersDatabase from '../database/UserWeathersDatabase';
+import Spinner from '../components/Spinner';
+import TimeAgo from '../components/TimeAgo';
+import WeatherStatus from '../components/home/WeatherStatus';
+import WeatherNoData from '../components/home/WeatherNoData';
+import WeatherItem from '../components/home/WeatherItem';
 
-function getDayOfWeek(datetime:string) {
-  let split = Platform.OS === 'web'? datetime.split(', ') : datetime.split(' ')
-  split = split[0].split('/')
+import { useAppDispatch, useAppSelector } from '../redux/hooks';
+import { 
+  resetError, 
+  resetStatus,
+  selectAllWeathers, 
+  selectWeatherById, 
+  selectWeatherRequestError, 
+  selectWeatherRequestStatus, 
+  fetchAndUpdateWeather, 
+  weatherAdded, 
+  setCurrentWeatherID,
+  getCurrentWeatherIDFromDB,
+  fetchWeather
+} from '../redux/weather/WeatherSlice';
+import { ICity } from 'country-state-city';
 
-  const date = new Date()
-  date.setDate(Number.parseInt(split[0]))
-  date.setMonth(Number.parseInt(split[1]))
-  date.setFullYear(Number.parseInt(split[2]))
-  
-  switch (date.getDay()) {    
-    case 1: return 'sábado'
-    case 2: return 'Domingo'            
-    case 3: return 'Segunda - feira'
-    case 4: return 'terça - feira'
-    case 5: return 'quarta - feira'
-    case 6: return 'quinta - feira'
-    default: return 'sexta - feira'
+function getDayOfWeek(datetime:string) { 
+  switch (parseISO(datetime).getDay()) {    
+    case 0: return 'Domingo'                
+    case 1: return 'Segunda - feira'
+    case 2: return 'terça - feira'
+    case 3: return 'quarta - feira'
+    case 4: return 'quinta - feira'
+    case 5: return 'sexta - feira'
+    default: return 'sábado'
   }
 }
 
-function isNight() {
-  return new Date().getHours() >= 18  
-}
+const isNight = (datetime:string) => parseISO(datetime).getHours() >= 18  
+
 
 export default function Home() {
   const colorScheme = useColorScheme()
   const router = useRouter()
   const navigation = useNavigation()
+
+  const {weatherSelectedID,searchedCity} = useLocalSearchParams()  
+
+  const dispatch = useAppDispatch()
+  const weather = useAppSelector(state => 
+    selectWeatherById(state.weathers.currentWeatherID)(state)
+  )
+
+  const weatherRequestStatus = useAppSelector(selectWeatherRequestStatus)  
+  const weatherRequestError = useAppSelector(selectWeatherRequestError)  
   
-  const {
-    WeatherData,
-    setWeather
-  } = useContext(WeatherContext)
+  const[isLoading,setLoadingState] = useState(false)
+
   const [permissionModalVisible, setPermissionModalVisible] = useState(false)
   const [NoConnectionModalVisible, setNoConnectionModalVisible] = useState(false)
-  const [isLoading, setIsloading] = useState(true)
+  
   const [backgroundGradient, setBackgroundGradient] = useState(
     [Colors[colorScheme ?? 'light'].background,
     Colors[colorScheme ?? 'light'].background]
   )
 
   // Hooks
-  useEffect( () => {
-    checkDatabase()
-    .then( async weatherStored => {
-      if (weatherStored?.locationName && setWeather){        
-        setWeather(weatherStored)
-        updateWeather(weatherStored.coords.latitude,weatherStored.coords.longitude)
-      }else 
-        await getMyLocationWeather()             
-    })
-    .finally(() => {
-      setIsloading(false)
-    })
-  }, [])  
-
   useEffect(() => {
-    setBackgroundGradient(handleBackgroundGradient(WeatherData.weatherMain))    
-    navigation.setOptions({ 
-      headerTitle: WeatherData.locationName,
-      
-      headerLeft:() => HeaderButton({
-        href:'/managerCities',
-        icon:'add',         
-        iconColor:'#fff',
-        iconSize:30,
-        style:{marginLeft:10}
-      }),
+    // if database empty
+    if (!weather && weatherRequestStatus === 'idle') {
+        getMyLocationWeather()
+    } 
+  }, [])
 
-      headerRight:() => HeaderButton({
-        onPress:updateWeather,
-        icon:'refresh',         
-        iconColor:'#fff',
-        iconSize:30,
-        style:{marginRight:10}
+  useEffect(() => {    
+    if (weather) {
+      setBackgroundGradient(handleBackgroundGradient())
+
+      navigation.setOptions({ 
+        headerTitle: weather.city,
+        
+        headerLeft:() => HeaderButton({
+          href:'/managerCities',
+          icon:'add',         
+          iconColor:'#fff',
+          iconSize:30,
+          style:{marginLeft:10}
+        }),
+
+        headerRight:() => HeaderButton({
+          onPress:updateWeather,
+          icon:'refresh',         
+          iconColor:'#fff',
+          iconSize:30,
+          style:{marginRight:10}
+        })      
       })      
-   })
-  }, [WeatherData])
+    }    
+  }, [weather])
 
-  // Checks
-  const checkDatabase = async () => {    
-    const cityStored = await UserWeathersDatabase().getCurrent()
-    
-    if (cityStored) return cityStored           
-    return null    
-  }
-
-  // Query WeatherData
-  const getMyLocationWeather = async () => {
-    setIsloading(true)  
-    try {     
-      const {latitude,longitude} = await LocationService().getMyLocation()
-      const currentLocationWeather = 
-        await WeatherService().getWeatherData({longitude, latitude})
-                
+  useEffect(() => { 
+    switch (weatherRequestStatus) {
+      case 'pending':
+        setLoadingState(true)        
+        break;      
       
-      if(currentLocationWeather && setWeather) setWeather(currentLocationWeather)       
-      
-    } catch (error:any) {
+      case 'failed':
+      case 'success': {        
+        setLoadingState(false)              
+        break;
+      }        
+    }    
+  }, [weatherRequestStatus])
+  
+  useEffect(() => {
+    if (weatherRequestError) {
 
-      if (error === Flags.ErrorFlags.LOCATIONPERMISSIONDENIED || error.code === 1) 
-        setPermissionModalVisible(true) 
+      switch (weatherRequestError) {
+        case Flags.errors.NOCONNECTION:
+          setNoConnectionModalVisible(true)         
+          break;
 
-      else if(error === Flags.ErrorFlags.NOCONNECTION)
-        setNoConnectionModalVisible(true)
-          
-    } finally {
-      setIsloading(false)
+        default: console.error(weatherRequestError.message);        
+      }
+      dispatch(resetError)
+    } 
+  }, [weatherRequestError])
+  
+  useEffect(() => {
+    if (weatherSelectedID && typeof weatherSelectedID === 'string') 
+      dispatch(setCurrentWeatherID(weatherSelectedID))
+
+    else if (searchedCity && typeof searchedCity === 'string') {
+      const {latitude,longitude} = JSON.parse(searchedCity.trim()) as ICity
+      if (latitude && longitude)
+        dispatch(
+          fetchWeather({
+            latitude:parseFloat(latitude),
+            longitude:parseFloat(longitude)
+          }))
+        .unwrap()
+        .then(response => dispatch(weatherAdded(response)))
     }
+      
     
+    
+  }, [weatherSelectedID,searchedCity])
+
+  // Query weather
+  const getMyLocationCoords = async () => {
+    try {
+      return await LocationService().getMyLocation() as CoordinatesProps
+
+    } catch (error:any) {
+      if (
+        error.message === Flags.errors.LOCATIONPERMISSIONDENIED || 
+        error.code === 1
+      ) 
+        setPermissionModalVisible(true)            
+    }
+
   }
 
-  const updateWeather = (latitude?: number, longitude?: number) => {
-    setIsloading(true)
-    let coords = WeatherData.coords
-
-    if (latitude && longitude) coords = {latitude, longitude}         
+  const getMyLocationWeather = async () => {      
+    try {
+      const coords = await getMyLocationCoords()
+      if(coords) {
+        const result = await WeatherService().getWeatherData(coords)
+        await dispatch(weatherAdded(result)).unwrap()
+        
+      }
+    } catch (error:any) {
+        if (error.message === Flags.errors.NOCONNECTION)
+          setNoConnectionModalVisible(true)
+            
+    } finally {
+      dispatch(resetStatus)   
+    } 
     
-    WeatherService().getWeatherData(coords)
-    .then(updatedWeather => {
+  }  
 
-      if(updatedWeather && setWeather) setWeather(updatedWeather)
-    })
-
-    .catch(error => {
-      if (error === Flags.ErrorFlags.NOCONNECTION)
-        setNoConnectionModalVisible(true)
-    })
-
-    .finally(() => setIsloading(false))   
+  const updateWeather = async () => {
+    try {
+      if (weather)
+        await dispatch(fetchAndUpdateWeather(weather)).unwrap()
+      
+    } finally {
+      dispatch(resetStatus)
+    }         
   }
 
   // Theme control
-  const handleBackgroundGradient = (weatherMain:string) => {    
-    switch (weatherMain) {
-      case Flags.WeatherApiState.SUNNY: {
-        if(isNight()) return CustomTheme.gradient.night         
-        else return CustomTheme.gradient.sunny       
+  const handleBackgroundGradient = () => {
+    if(weather)  
+      switch (weather.weatherMain) {
+        case Flags.WeatherApiState.SUNNY: {
+          if(isNight(weather.datetime)) return CustomTheme.gradient.night         
+          else return CustomTheme.gradient.sunny       
+        }
+        case Flags.WeatherApiState.CLOUDY: return CustomTheme.gradient.cloudy
+        case Flags.WeatherApiState.SNOW:
+        case Flags.WeatherApiState.RAINY: return CustomTheme.gradient.rainy      
       }
-      case Flags.WeatherApiState.CLOUDY: return CustomTheme.gradient.cloudy
-      case Flags.WeatherApiState.SNOW:
-      case Flags.WeatherApiState.RAINY: return CustomTheme.gradient.rainy      
-    }
-    return [Colors[colorScheme ?? 'light'].background,
-    Colors[colorScheme ?? 'light'].background]  
+
+    return [
+      Colors[colorScheme ?? 'light'].background,
+      Colors[colorScheme ?? 'light'].background
+    ]  
   }
 
   // Navigation
@@ -189,11 +250,10 @@ export default function Home() {
       message='Sem conexão com a internet !'
       modalVisible={NoConnectionModalVisible} 
       onCloseModal={CloseNoConnectionModal} />
-    ),[NoConnectionModalVisible])
-
+    ),[NoConnectionModalVisible])    
   
   // Viewers 
-  if(WeatherData.locationName || isLoading) {
+  if(weather || isLoading) {
     return (      
       <LinearGradient 
         colors={backgroundGradient} 
@@ -209,74 +269,49 @@ export default function Home() {
           refreshing={isLoading} 
           onRefresh={() => updateWeather()}/>      
         }>
-          {isLoading && 
-          !WeatherData.locationName && 
-          Platform.OS === 'web' ? (
-            <View style={styles.centeredView}>
-                <ActivityIndicator 
-                size="large" 
-                color={Colors[colorScheme ?? 'light'].icon} />
-            </View>
-
-          ) : (
+          {!isLoading && weather       
+          ? (
             <View style={[styles.container,{flex:1,backgroundColor:'transparent'}]}>
-              <OpenTextDefault style={styles.updateTimeText} >
-                Atualizado: {WeatherData.datetime}
-              </OpenTextDefault>
+              <TimeAgo time={weather.datetime} />
 
               <WeatherStatus 
-                iconName={WeatherData.icon}
-                iconColor='#fff'
-                iconSize={150}
-                separatorColor='#ccc'
-                textColor='#fff'
-                temp={WeatherData.temperature + '°'}
-                tempMax={WeatherData.maxTemperature + '°'}
-                tempMin={WeatherData.minTemperature + '°'}
-                weatherDescription={WeatherData.weatherDetail}
-                
+                iconName='sunny'
+                temp={weather.temperature + '°'}
+                tempMax={weather.maxTemperature + '°'}
+                tempMin={weather.minTemperature + '°'}
+                weatherDescription={weather.weatherDescription}
               />
         
               <WeatherDetail 
-                dayOfWeek={getDayOfWeek(WeatherData.datetime)}
-                textColor='#fff'
-                separatorColor='#ccc'           
-                >          
-                  <WeatherItem 
-                    iconColor = '#fff'            
-                    iconName='sun-thermometer-outline'
-                    textColor='#fff'
-                    iconSize={30}
-                    label='Sensação'
-                    value={WeatherData.feelsLike + '°c '}
-                  />
-                  <WeatherItem 
-                    iconColor = '#fff'            
-                    iconName='water-percent'
-                    textColor='#fff'
-                    iconSize={30}
-                    label='Humidade'
-                    value={WeatherData.humidity + '%'}
-                  />
-                  <WeatherItem 
-                    iconColor = '#fff'            
-                    iconName='weather-windy'
-                    textColor='#fff'
-                    iconSize={30}
-                    label='Vento'
-                    value={WeatherData.wind + ' km/h'}
-                  />
-                  <WeatherItem 
-                    iconColor = '#fff'            
-                    iconName='thermostat-box'
-                    textColor='#fff'
-                    iconSize={30}
-                    label='Pressão'
-                    value={WeatherData.pressure + ' mbar'}
-                  />                               
+              dayOfWeek={getDayOfWeek(weather.datetime)}                           
+              >          
+                <WeatherItem  
+                  iconName='sun-thermometer-outline'
+                  iconSize={30}
+                  label='Sensação'
+                  value={`${weather.feelsLike}°${weather.temperatureUnit}`}
+                />
+                <WeatherItem                                
+                  iconName='water-percent'                    
+                  iconSize={30}
+                  label='Humidade'
+                  value={weather.humidity + '%'}
+                />
+                <WeatherItem 
+                  iconName='weather-windy'                    
+                  iconSize={30}
+                  label='Vento'
+                  value={`${weather.wind} ${weather.windUnit}`}
+                />
+                <WeatherItem                                 
+                  iconName='thermostat-box'                    
+                  iconSize={30}
+                  label='Pressão'
+                  value={`${weather.pressure} ${weather.pressureUnit}`}
+                />                               
               </WeatherDetail>
             </View>
-          )}
+          ): <Spinner />}
 
           {PermissionModalJSX()}       
           {NoConnectionModalJSX()}
@@ -285,26 +320,13 @@ export default function Home() {
     )
   } else {    
     return (
-      <View style={styles.centeredView}>
-        <OpenText style={styles.noDataText}>
-          Ainda não escolheu uma cidade?  
-        </OpenText>
-        <OpenText style={[styles.noDataText,{opacity:0.5,fontSize:16}]}>
-          Escolha uma das opções abaixo.
-        </OpenText>
-        <Button 
-          label='Usar minha localização' 
-          onPress={getMyLocationWeather}
-          style={{marginTop:30}}
-          borderColor={Colors[colorScheme ?? 'light'].borderColor}/>
-        <Button 
-          label='Escolher uma cidade' 
-          onPress={gotoManagerCities}
-          style={{marginTop:25}}
-          borderColor={Colors[colorScheme ?? 'light'].borderColor}/>
+      <WeatherNoData 
+        onPressMyLocationWeather={getMyLocationWeather}
+        onPressNavigate={gotoManagerCities}>
         {PermissionModalJSX()}
         {NoConnectionModalJSX()}
-      </View>
+      </WeatherNoData>
+      
     )    
   }  
 }
@@ -315,8 +337,7 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent:'space-between',
     flexDirection:'column',
-    paddingTop:80
-    
+    paddingTop:80    
   },
 
   centeredView:{
@@ -329,10 +350,4 @@ const styles = StyleSheet.create({
     fontSize:18,
     textAlign:'center'
   },
-
-  updateTimeText:{
-    fontSize:14,
-    color:'#fff',
-    opacity:0.8
-  }
 });

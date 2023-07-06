@@ -1,26 +1,25 @@
-import {OpenTextDefault} from './StyledText';
-import {Image, StyleProp, StyleSheet, View, ViewStyle} from 'react-native';
+import {OpenTextDefault} from '../StyledText';
+import {StyleProp, StyleSheet, View, ViewStyle} from 'react-native';
 
 export default function WeatherDetail({
-  dayOfWeek,
-  textColor,
-  separatorColor,
+  dayOfWeek,  
   style,
   children,
 }: {
   dayOfWeek: string;
-  textColor: string;
-  separatorColor?: string;
   style?: StyleProp<ViewStyle>;
   children?: Array<JSX.Element> | JSX.Element;
 }) {
   return (
     <View style={[styles.container, style]}>            
       <View>
-        <OpenTextDefault style={[styles.dayOfWeek, {color: textColor}]}>{dayOfWeek}</OpenTextDefault>
+        <OpenTextDefault 
+          style={styles.dayOfWeek}>
+          {dayOfWeek}
+        </OpenTextDefault>
       </View>
 
-      <View style={[styles.separator, {backgroundColor: separatorColor}]} />
+      <View style={styles.separator} />
 
       <View style={styles.detail}>{children}</View>
     </View>
@@ -50,6 +49,7 @@ const styles = StyleSheet.create({
   },
 
   dayOfWeek: {
+    color:'#fff',
     fontSize: 26,
     textTransform: 'capitalize',
     marginVertical: 18,
@@ -57,6 +57,7 @@ const styles = StyleSheet.create({
 
   separator: {
     height: 1,
+    backgroundColor:'#ccc',
     borderRadius: 20,
     marginVertical: 3,
     width: '100%',

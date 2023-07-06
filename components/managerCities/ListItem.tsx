@@ -1,30 +1,34 @@
 import React from 'react';
-import { View } from './Themed';
+import { View } from '../Themed';
 import { ListRenderItemInfo, Pressable, StyleSheet, useColorScheme } from 'react-native';
-import { OpenText } from './StyledText';
+import { OpenText } from '../StyledText';
 import { MaterialCommunityIcons } from '@expo/vector-icons';
 
 export default function ListItem(
-    {data,onPress,borderColor,onPressDeleteButton,showDeleteButton} :
+    {data,onPress,city,state,country,borderColor,onPressDeleteButton,showDeleteButton} :
     {
-      data:ListRenderItemInfo<string>,      
+      data:ListRenderItemInfo<any>,
+      city:string,
+      state:string,
+      country:string,    
       borderColor?:string,
-      onPress:(data:ListRenderItemInfo<string>) => void,
-      onPressDeleteButton:(data:ListRenderItemInfo<string>) => void,
+      onPress:(data:ListRenderItemInfo<any>) => void,
+      onPressDeleteButton?:(data:ListRenderItemInfo<any>) => void,
       showDeleteButton?:boolean
     }) {
     
     return (
+      <Pressable onPress={() => onPress(data)}>
+        
         <View
           style={[
             styles.item,            
             {borderBottomColor: borderColor},             
           ]}>
-          <Pressable onPress={() => onPress(data)}>
-            <OpenText style={styles.title}>{data.item}</OpenText>
-          </Pressable>
-          {showDeleteButton ? (
-            <Pressable onPress={() => onPressDeleteButton(data)}>
+            <OpenText style={styles.text}>{city}</OpenText>
+            <OpenText style={[styles.text,{opacity:0.8}]}>{state+' - '+country}</OpenText>
+          {showDeleteButton && onPressDeleteButton ? (
+            <Pressable style={{right:0,position:'absolute'}} onPress={() => onPressDeleteButton(data)}>
               {({pressed})=>(
                 <MaterialCommunityIcons 
                 name='delete' 
@@ -35,24 +39,24 @@ export default function ListItem(
             </Pressable>
           ):null}
         </View>
+      </Pressable>
     )
 };
 
 const styles = StyleSheet.create({
     item: {
-      flexDirection:'row',
+      flexDirection:'column',
         height: 80,
         marginVertical: 5,
         paddingHorizontal:10,
         backgroundColor: 'transparent',
-        justifyContent: 'space-between',
-        alignItems:'center',
+        justifyContent:'center',
         borderBottomWidth: 1,
         borderBottomColor: 'rgba(0,0,0,0.2)',
       },
     
-      title: {
-        fontSize: 22,
+      text: {                
+        fontSize: 16,
         marginLeft: 5,        
       },
 })
