@@ -16,8 +16,8 @@ Foi Utilizado:
 - Entre outros.
 
 ## [Preview Web](https://64b006c80700761042c993fa--cataclima.netlify.app/) 🖥️
-## [Preview Android (APK)]() 🤖
-## [Preview IOS]() 🍏
+## [Preview Android (APK)]() 🤖 <sub><sup>Ainda não disponível</sup></sub>
+## [Preview IOS]() 🍏 <sub><sup>Ainda não disponível</sup></sub>
 
 # Futuro
 
