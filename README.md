@@ -15,7 +15,7 @@ Foi Utilizado:
 - Linter ⚊ [eslint-typescript](https://typescript-eslint.io/);
 - Entre outros.
 
-## [Preview Web](https://64b006c80700761042c993fa--cataclima.netlify.app/) 🖥️
+## [Preview Web](https://64b04034f4c88331d631fc7c--cataclima.netlify.app/) 🖥️
 ## [Preview Android (APK)]() 🤖 <sub><sup>Ainda não disponível</sup></sub>
 ## [Preview IOS]() 🍏 <sub><sup>Ainda não disponível</sup></sub>
 
