@@ -1,16 +1,16 @@
 import { StyleProp, TextStyle } from "react-native"
-import { OpenTextDefault } from "../StyledText"
+import { OpenText } from "../StyledText"
 
 export default function WeatherText(
     {text,style} : 
     {text:string,style?:StyleProp<TextStyle>}
 ) {
     return (
-        <OpenTextDefault 
+        <OpenText 
             numberOfLines={1} 
             adjustsFontSizeToFit             
             style={[style,{color:'#fff'}]}>
             {text}
-        </OpenTextDefault>
+        </OpenText>
     )
 }

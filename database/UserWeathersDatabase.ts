@@ -3,8 +3,7 @@ import { InitialWeatherProps, WeatherProps } from '../constants/Interfaces';
 
 export default function UserWeathersDatabase() {
   const addWeatherDB = async (newWeather: WeatherProps) => {
-    try {
-
+    try {      
         // if already exists, merge
         if (await checkIsAlreadyInDB(newWeather.id))
           AsyncStorage.mergeItem(
@@ -59,20 +58,15 @@ export default function UserWeathersDatabase() {
   }; 
 
   const getCurrentWeatherID = async () => {  
-    const currentWeatherId = await AsyncStorage.getItem('currentWeatherID')
+    const currentWeatherId = await AsyncStorage.getItem('currentWeatherID')    
 
     if(currentWeatherId) return currentWeatherId 
     return await createCurrent()
   };
   
-  const setCurrentWeatherID = async (newID:string) => {
-    try {  
-      console.log(newID)    
-      await AsyncStorage.mergeItem('currentWeatherID',newID.trim())
+  const setCurrentWeatherID = async (newID:string) => {  
+    await AsyncStorage.setItem('currentWeatherID',newID.trim())
       
-    } catch (error:any) {      
-    }
-    
     return newID
   }
 

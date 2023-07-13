@@ -12,10 +12,10 @@ export default function HeaderButton({
   style,
 }: {
   href?: string;
-  params?: any;
-  onPress?:Function
+  params?: object;
+  onPress?:() => void;
   iconSize: number;
-  icon: any;
+  icon: string | any;
   iconColor: string;
   style?: StyleProp<TextStyle>;
 }) {
@@ -25,7 +25,9 @@ export default function HeaderButton({
       style={style} 
       asChild
     >
-      <Pressable onPress={() => onPress ? onPress() : null}>
+      <Pressable 
+        accessibilityRole='button'
+        onPress={() => onPress ? onPress() : null}>
         {({pressed}) => (
           <MaterialIcons 
             name={icon} 

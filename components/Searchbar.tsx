@@ -1,49 +1,43 @@
 import React from 'react';
-import {StyleSheet, TextInput} from 'react-native';
+import {StyleSheet, TextInput, useColorScheme} from 'react-native';
 import {View} from './Themed';
 import {MaterialIcons} from '@expo/vector-icons';
+import Colors from '../constants/Colors';
 
 // caretColor: cursorColor WEB fix
 
 export default function Searchbar({
   placeholder,
-  placeholderTextColor,
-  iconColor,
-  textColor,
   backgroundColor,
-  borderColor,
   onChangeText,
 }: {
   placeholder: string;
-  placeholderTextColor: string;
-  iconColor: string;
   backgroundColor?: string;
-  borderColor: string;
-  textColor: string;
-  onChangeText: Function;
+  onChangeText: (changedText:string) => void;
 }) {
+  const colorScheme =  useColorScheme()
   return (
     <View
       style={[
         styles.containerInput,
         {
-          backgroundColor: backgroundColor || '#fff',
+          backgroundColor: backgroundColor || Colors[colorScheme ?? 'light'].background,
           borderWidth: 1,
-          borderColor: borderColor,
+          borderColor: Colors[colorScheme ?? 'light'].borderColor,
         },
       ]}>
       <MaterialIcons 
         name="search" 
-        color={iconColor} 
+        color={Colors[colorScheme ?? 'light'].icon} 
         size={20} 
         style={styles.icon} 
       />
       <TextInput
         placeholder={placeholder}
-        placeholderTextColor={placeholderTextColor}
+        placeholderTextColor={Colors[colorScheme ?? 'light'].placeholderText}
         inputMode="text"
-        cursorColor={textColor}
-        style={[styles.input, {color: textColor}]}
+        cursorColor={Colors[colorScheme ?? 'light'].text}
+        style={[styles.input, {color: Colors[colorScheme ?? 'light'].text}]}
         onChangeText={text => onChangeText(text)}
       />
     </View>

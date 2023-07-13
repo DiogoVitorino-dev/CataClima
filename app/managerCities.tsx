@@ -1,53 +1,42 @@
 import {StyleSheet, useColorScheme} from 'react-native';
-import {Text, View} from '../components/Themed';
+import {View} from '../components/Themed';
 import Searchbar from '../components/Searchbar';
-import Colors from '../constants/Colors';
-import { useEffect, useState } from 'react';
+import { useEffect,  useState } from 'react';
 import CitiesList from '../components/managerCities/CitiesList';
-import { City, ICity } from 'country-state-city';
+import { ICity } from 'country-state-city';
 import { useAppSelector } from '../redux/hooks';
 import { selectAllWeathers } from '../redux/weather/WeatherSlice';
+import { OpenTextStyled } from '../components/StyledText';
+import CountryStateCities from '../libs/CountryStateCities/CountryStateCities';
 
-
-const searchCities = async (
-  searchText:string,
-  ignoreCities:string[] = []
-) => {      
-  const reg = new RegExp(`^${searchText}`,'i')
-  return City.getAllCities()
-  .filter(city => city.name.match(reg) && !ignoreCities.includes(city.name))
-}
 
 export default function ManagerCities() {
   const colorScheme = useColorScheme();
   const [searchText, setSearchText] = useState('');
   const [searchResult, setSearchResult] = useState(Array<ICity>);
-  const allWeathersNames = useAppSelector(state => 
-    selectAllWeathers(state).map(weather => weather.city)
-  )
+  const allWeathers = useAppSelector(selectAllWeathers)
 
-  const serchTextChanged = (newText:string) => setSearchText(newText)
+  const searchTextChanged = (newText:string) => setSearchText(newText)
   
-  useEffect(() => {
+  useEffect(() => {    
     if(searchText)   
-      searchCities(searchText,allWeathersNames).then(result => setSearchResult(result))
-    else setSearchResult([])
+      CountryStateCities().searchCities(searchText,allWeathers)
+      .then(result => setSearchResult(result))
+    else 
+      setSearchResult([])
+    
   },[searchText])
 
   return (
     <View style={styles.container}>
-      <Text style={[styles.title]}>Gerenciar cidades</Text>
+      <OpenTextStyled style={[styles.title]}>Gerenciar cidades</OpenTextStyled>
 
       <View style={styles.separator} lightColor="#eee" darkColor="rgba(255,255,255,0.1)" />
 
       <Searchbar
         placeholder="Inserir cidades"
-        placeholderTextColor={Colors[colorScheme ?? 'light'].placeholderText}
-        backgroundColor={colorScheme === 'light' ? '#FAFAFA' : '#333333'}
-        iconColor={Colors[colorScheme ?? 'light'].icon}
-        borderColor={Colors[colorScheme ?? 'light'].borderColor}
-        textColor={Colors[colorScheme ?? 'light'].text}
-        onChangeText={serchTextChanged}
+        backgroundColor={colorScheme === 'light' ? '#FAFAFA' : '#333333'}        
+        onChangeText={searchTextChanged}
       />
 
       <CitiesList

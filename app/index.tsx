@@ -2,15 +2,13 @@ import {
   StyleSheet, 
   ScrollView, 
   useColorScheme, 
-  RefreshControl
+  RefreshControl,
 } from 'react-native'
 import { useLocalSearchParams, useNavigation, useRouter } from 'expo-router';
 import { useCallback, useEffect, useState } from 'react'
 import { LinearGradient } from 'expo-linear-gradient'
-import { parseISO } from 'date-fns';
 
-import LocationService from '../services/location/LocationService';
-import WeatherService from '../services/weather/WeatherService';
+import LocationLib from '../libs/Location/Location';
 
 import Colors from '../constants/Colors';
 import { CoordinatesProps } from '../constants/Interfaces';
@@ -32,32 +30,20 @@ import { useAppDispatch, useAppSelector } from '../redux/hooks';
 import { 
   resetError, 
   resetStatus,
-  selectAllWeathers, 
   selectWeatherById, 
   selectWeatherRequestError, 
   selectWeatherRequestStatus, 
   fetchAndUpdateWeather, 
   weatherAdded, 
   setCurrentWeatherID,
-  getCurrentWeatherIDFromDB,
-  fetchWeather
+  fetchWeather,
+  retrieveWeathersFromDB,
+  getCurrentWeatherIDFromDB
 } from '../redux/weather/WeatherSlice';
 import { ICity } from 'country-state-city';
-
-function getDayOfWeek(datetime:string) { 
-  switch (parseISO(datetime).getDay()) {    
-    case 0: return 'Domingo'                
-    case 1: return 'Segunda - feira'
-    case 2: return 'terça - feira'
-    case 3: return 'quarta - feira'
-    case 4: return 'quinta - feira'
-    case 5: return 'sexta - feira'
-    default: return 'sábado'
-  }
-}
-
-const isNight = (datetime:string) => parseISO(datetime).getHours() >= 18  
-
+import AnimatedBackground from '../components/home/AnimatedBackground';
+import DatetimeUtils from '../utils/DatetimeUtils';
+import { StatusBar } from 'expo-status-bar';
 
 export default function Home() {
   const colorScheme = useColorScheme()
@@ -67,9 +53,18 @@ export default function Home() {
   const {weatherSelectedID,searchedCity} = useLocalSearchParams()  
 
   const dispatch = useAppDispatch()
-  const weather = useAppSelector(state => 
-    selectWeatherById(state.weathers.currentWeatherID)(state)
+  const weather = useAppSelector(state =>{ 
+    const a = selectWeatherById(state,state.weathers.currentWeatherID)
+    console.log(state.weathers.entities);
+    console.log(state.weathers.currentWeatherID);
+    
+    
+    
+    return a 
+  }
   )
+  
+  
 
   const weatherRequestStatus = useAppSelector(selectWeatherRequestStatus)  
   const weatherRequestError = useAppSelector(selectWeatherRequestError)  
@@ -86,11 +81,10 @@ export default function Home() {
 
   // Hooks
   useEffect(() => {
-    // if database empty
-    if (!weather && weatherRequestStatus === 'idle') {
-        getMyLocationWeather()
-    } 
+    if (!weather && weatherRequestStatus === 'idle')
+        checkDatabase().then(saved => {saved || getMyLocationWeather()})
   }, [])
+  
 
   useEffect(() => {    
     if (weather) {
@@ -119,6 +113,7 @@ export default function Home() {
   }, [weather])
 
   useEffect(() => { 
+     
     switch (weatherRequestStatus) {
       case 'pending':
         setLoadingState(true)        
@@ -147,11 +142,15 @@ export default function Home() {
   }, [weatherRequestError])
   
   useEffect(() => {
+    console.log(weatherSelectedID,searchedCity);
+    
     if (weatherSelectedID && typeof weatherSelectedID === 'string') 
       dispatch(setCurrentWeatherID(weatherSelectedID))
 
     else if (searchedCity && typeof searchedCity === 'string') {
       const {latitude,longitude} = JSON.parse(searchedCity.trim()) as ICity
+      
+      
       if (latitude && longitude)
         dispatch(
           fetchWeather({
@@ -166,10 +165,22 @@ export default function Home() {
     
   }, [weatherSelectedID,searchedCity])
 
+  // check
+
+  const checkDatabase = async () => {   
+    const saved = await dispatch(retrieveWeathersFromDB()).unwrap()
+    if(saved.length > 0){    
+      await dispatch(getCurrentWeatherIDFromDB()).unwrap()
+      return true
+    }
+
+    return false
+  }
+
   // Query weather
   const getMyLocationCoords = async () => {
     try {
-      return await LocationService().getMyLocation() as CoordinatesProps
+      return await LocationLib().getMyLocation() as CoordinatesProps
 
     } catch (error:any) {
       if (
@@ -183,10 +194,13 @@ export default function Home() {
 
   const getMyLocationWeather = async () => {      
     try {
-      const coords = await getMyLocationCoords()
+      const coords = await getMyLocationCoords() 
+
       if(coords) {
-        const result = await WeatherService().getWeatherData(coords)
-        await dispatch(weatherAdded(result)).unwrap()
+        const result = await dispatch(fetchWeather(coords)).unwrap()
+
+        if (result) 
+          await dispatch(weatherAdded(result)).unwrap()
         
       }
     } catch (error:any) {
@@ -214,7 +228,7 @@ export default function Home() {
     if(weather)  
       switch (weather.weatherMain) {
         case Flags.WeatherApiState.SUNNY: {
-          if(isNight(weather.datetime)) return CustomTheme.gradient.night         
+          if(DatetimeUtils().isNight(weather.datetime)) return CustomTheme.gradient.night         
           else return CustomTheme.gradient.sunny       
         }
         case Flags.WeatherApiState.CLOUDY: return CustomTheme.gradient.cloudy
@@ -227,6 +241,21 @@ export default function Home() {
       Colors[colorScheme ?? 'light'].background
     ]  
   }
+  
+  const handleIcon = () => {
+    if(weather)  
+      switch (weather.weatherMain) {
+        case Flags.WeatherApiState.SUNNY: {
+          if(DatetimeUtils().isNight(weather.datetime)) return 'moon'       
+          else return 'sunny'     
+        }
+        case Flags.WeatherApiState.CLOUDY: return 'cloud'
+        case Flags.WeatherApiState.SNOW:
+        case Flags.WeatherApiState.RAINY: return 'rainy'    
+      }
+
+    return ''
+  }  
 
   // Navigation
   const gotoManagerCities = () => router.push({pathname:'/managerCities'})
@@ -238,18 +267,18 @@ export default function Home() {
 
   const PermissionModalJSX = useCallback(() => (
     <PermissionModal 
-      isModalVisible={permissionModalVisible} 
+      visible={permissionModalVisible} 
       onPressFirstButton={getMyLocationWeather}
       onPressSecondButton={gotoManagerCities}
-      onRequestClose={ClosePermissionModal}
+      onDismiss={ClosePermissionModal}
     />
   ),[permissionModalVisible])
 
   const NoConnectionModalJSX = useCallback(() => (
     <SimpleModal 
       message='Sem conexão com a internet !'
-      modalVisible={NoConnectionModalVisible} 
-      onCloseModal={CloseNoConnectionModal} />
+      visible={NoConnectionModalVisible} 
+      onDismiss={CloseNoConnectionModal} />
     ),[NoConnectionModalVisible])    
   
   // Viewers 
@@ -272,19 +301,17 @@ export default function Home() {
           {!isLoading && weather       
           ? (
             <View style={[styles.container,{flex:1,backgroundColor:'transparent'}]}>
-              <TimeAgo time={weather.datetime} />
+              <TimeAgo dateIsoFormat={weather.datetime} />
 
               <WeatherStatus 
-                iconName='sunny'
+                iconName={handleIcon()}
                 temp={weather.temperature + '°'}
                 tempMax={weather.maxTemperature + '°'}
                 tempMin={weather.minTemperature + '°'}
                 weatherDescription={weather.weatherDescription}
               />
         
-              <WeatherDetail 
-              dayOfWeek={getDayOfWeek(weather.datetime)}                           
-              >          
+              <WeatherDetail dayOfWeek={DatetimeUtils().getDayOfWeek(weather.datetime)}>
                 <WeatherItem  
                   iconName='sun-thermometer-outline'
                   iconSize={30}
@@ -308,14 +335,17 @@ export default function Home() {
                   iconSize={30}
                   label='Pressão'
                   value={`${weather.pressure} ${weather.pressureUnit}`}
-                />                               
+                />
               </WeatherDetail>
+              <AnimatedBackground />
+              
             </View>
           ): <Spinner />}
 
           {PermissionModalJSX()}       
           {NoConnectionModalJSX()}
-        </ScrollView>       
+        </ScrollView>
+        <StatusBar style='light' />       
       </LinearGradient>            
     )
   } else {    
@@ -325,6 +355,7 @@ export default function Home() {
         onPressNavigate={gotoManagerCities}>
         {PermissionModalJSX()}
         {NoConnectionModalJSX()}
+        <StatusBar style='auto' />
       </WeatherNoData>
       
     )    
@@ -349,5 +380,5 @@ const styles = StyleSheet.create({
   noDataText:{
     fontSize:18,
     textAlign:'center'
-  },
+  },  
 });

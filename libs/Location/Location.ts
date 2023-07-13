@@ -8,7 +8,7 @@ const requestPermissions = async () => {
   return (await Location.requestForegroundPermissionsAsync()).status === 'granted';
 };
 
-export default function LocationService() {
+export default function LocationLib() {
   const getMyLocation = async () => {
     if (Platform.OS !== 'web') {
       const permission = await requestPermissions();

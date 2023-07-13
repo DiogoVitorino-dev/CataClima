@@ -1,4 +1,4 @@
-import {OpenTextDefault} from '../StyledText';
+import {OpenText} from '../StyledText';
 import {StyleProp, StyleSheet, View, ViewStyle} from 'react-native';
 
 export default function WeatherDetail({
@@ -13,15 +13,16 @@ export default function WeatherDetail({
   return (
     <View style={[styles.container, style]}>            
       <View>
-        <OpenTextDefault 
+        <OpenText 
           style={styles.dayOfWeek}>
           {dayOfWeek}
-        </OpenTextDefault>
+        </OpenText>
       </View>
 
       <View style={styles.separator} />
-
       <View style={styles.detail}>{children}</View>
+
+      
     </View>
   );
 }

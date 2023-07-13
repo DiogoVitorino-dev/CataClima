@@ -1,7 +1,7 @@
 import React from 'react';
 import { View } from '../Themed';
 import { ListRenderItemInfo, Pressable, StyleSheet, useColorScheme } from 'react-native';
-import { OpenText } from '../StyledText';
+import { OpenTextStyled } from '../StyledText';
 import { MaterialCommunityIcons } from '@expo/vector-icons';
 
 export default function ListItem(
@@ -25,8 +25,8 @@ export default function ListItem(
             styles.item,            
             {borderBottomColor: borderColor},             
           ]}>
-            <OpenText style={styles.text}>{city}</OpenText>
-            <OpenText style={[styles.text,{opacity:0.8}]}>{state+' - '+country}</OpenText>
+            <OpenTextStyled style={styles.text}>{city}</OpenTextStyled>
+            <OpenTextStyled style={[styles.text,{opacity:0.8}]}>{state+' - '+country}</OpenTextStyled>
           {showDeleteButton && onPressDeleteButton ? (
             <Pressable style={{right:0,position:'absolute'}} onPress={() => onPressDeleteButton(data)}>
               {({pressed})=>(

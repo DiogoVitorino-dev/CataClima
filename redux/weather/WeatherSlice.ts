@@ -1,6 +1,7 @@
 import {     
     SerializedError, 
     createAsyncThunk, 
+    createEntityAdapter, 
     createSlice, 
     nanoid
 } from "@reduxjs/toolkit";
@@ -10,18 +11,18 @@ import { RootState } from "../store";
 import UserWeathersDatabase from "../../database/UserWeathersDatabase";
 
 export interface WeatherStateProps {
-    currentWeatherID:string
-    weathers: Array<WeatherProps> 
+    currentWeatherID:string     
     statusRequest: 'idle'|'pending'|'success'|'failed',
     error: null | SerializedError 
 }
 
-const initialState: WeatherStateProps = {
-    currentWeatherID:'',
-    weathers:[],    
+const weatherAdapter =  createEntityAdapter<WeatherProps>()
+
+const initialState = weatherAdapter.getInitialState({
+    currentWeatherID:'',    
     statusRequest:'idle',
     error:null     
-}
+} as WeatherStateProps)
 
 export const fetchAndUpdateWeather = createAsyncThunk(
     'weathers/fetchAndUpdateWeather',
@@ -35,7 +36,7 @@ export const fetchAndUpdateWeather = createAsyncThunk(
 
 export const fetchWeather = createAsyncThunk(
     'weathers/fetchWeather',
-    (coords:CoordinatesProps) => WeatherService().getWeatherData(coords)
+    async (coords:CoordinatesProps) => WeatherService().getWeatherData(coords)
 )
 
 export const retrieveWeathersFromDB = createAsyncThunk(
@@ -68,7 +69,7 @@ export const weatherRemoved = createAsyncThunk(
     'weathers/weatherRemoved',
     async (weatherID:string,{dispatch}) => {
         await UserWeathersDatabase().deleteWeatherDB(weatherID)
-        dispatch(getCurrentWeatherIDFromDB())
+        await dispatch(getCurrentWeatherIDFromDB()).unwrap()
         return weatherID
     }   
 )
@@ -92,12 +93,7 @@ const weathersSlice = createSlice({
         })
 
         .addCase(fetchAndUpdateWeather.fulfilled, (state, action) => {
-            let weatherIndex = state.weathers.findIndex (
-                weather =>  weather.id === action.payload.id                
-            )
-            if (weatherIndex !== -1) 
-                state.weathers[weatherIndex] = action.payload
-                        
+            weatherAdapter.upsertOne(state,action.payload)           
             state.statusRequest = 'success'
         }) 
         
@@ -119,20 +115,20 @@ const weathersSlice = createSlice({
             state.error = action.error
         })
         
-        .addCase(weatherAdded.fulfilled, (state, action) => {
-            state.weathers.push(action.payload)
-            state.currentWeatherID = action.payload.id         
+        .addCase(weatherAdded.fulfilled, (state, action) => {           
+            weatherAdapter.upsertOne(state,action.payload)
+            state.currentWeatherID = action.payload.id 
         })
         
         .addCase(weatherRemoved.fulfilled, (state, action) => {
-            state.weathers = state.weathers.filter(weather => weather.id !== action.payload)           
+            weatherAdapter.removeOne(state,action.payload)
         })
 
         .addCase(retrieveWeathersFromDB.fulfilled, (state, action) => {
-            state.weathers = action.payload           
+            weatherAdapter.setAll(state,action.payload)
         })
         
-        .addCase(getCurrentWeatherIDFromDB.fulfilled, (state, action) => {
+        .addCase(getCurrentWeatherIDFromDB.fulfilled, (state, action) => {                
             state.currentWeatherID = action.payload           
         })       
         
@@ -144,9 +140,11 @@ const weathersSlice = createSlice({
 
 export const {resetStatus,resetError} = weathersSlice.actions
 
-export const selectAllWeathers = (state:RootState) => state.weathers.weathers
-export const selectWeatherById = (weatherID:string) => (state:RootState) => 
-    state.weathers.weathers.find(weather => weather.id === weatherID)
+export const {
+    selectAll:selectAllWeathers,
+    selectById:selectWeatherById,
+} = weatherAdapter.getSelectors<RootState>(state => state.weathers)
+
 export const selectWeatherRequestStatus = (state:RootState) => state.weathers.statusRequest
 export const selectWeatherRequestError = (state:RootState) => state.weathers.error
 

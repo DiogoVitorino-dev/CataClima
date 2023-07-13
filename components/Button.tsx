@@ -1,6 +1,6 @@
 import {Pressable, StyleProp, StyleSheet, ViewStyle, useColorScheme} from 'react-native';
 import {View} from '../components/Themed';
-import {OpenText} from './StyledText';
+import {OpenTextStyled} from './StyledText';
 import Colors from '../constants/Colors';
 
 export default function Button({
@@ -11,7 +11,7 @@ export default function Button({
 }: {
   label: string;  
   disabled?: boolean;
-  onPress: Function;
+  onPress: () => void;
   style?: StyleProp<ViewStyle>;
 }) {
   const colorScheme = useColorScheme()
@@ -29,13 +29,14 @@ export default function Button({
       lightColor="#FAFAFA"
       darkColor="#1A1A1A">
       <Pressable 
-        style={styles.button} 
+        style={styles.button}
+        testID='pressableTestID'
         onPress={() => onPress()} disabled={disabled}>          
         {({pressed}) => (
-          <OpenText 
+          <OpenTextStyled 
             style={[styles.label, {opacity: pressed ? 0.5 : 1}]}>
             {label}
-          </OpenText>
+          </OpenTextStyled>
         )}
       </Pressable>
     </View>

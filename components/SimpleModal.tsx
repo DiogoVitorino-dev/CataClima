@@ -1,35 +1,39 @@
-import React from 'react';
+import React, { useEffect, useState } from 'react';
 import {Modal, StyleSheet, Pressable, useColorScheme} from 'react-native';
-import {OpenText} from './StyledText';
+import {OpenTextStyled} from './StyledText';
 import {MaterialCommunityIcons} from '@expo/vector-icons';
 import {View} from './Themed';
 import Colors from '../constants/Colors';
 
 export default function SimpleModal({
   message,
-  modalVisible,
-  onCloseModal,
-}: {
+  visible,
+  onDismiss
+} : {
   message: string;
-  modalVisible: boolean;
-  onCloseModal: Function;
+  visible: boolean;
+  onDismiss?: () => void;
 }) {
   const colorScheme = useColorScheme()
+  const [visibleState,setVisibleState] = useState(false)
+
+  useEffect(() => setVisibleState(visible), [visible])
+
   return (
     <Modal       
     animationType="slide" 
     transparent={true} 
-    visible={modalVisible}
-    onRequestClose={() => onCloseModal()}
+    visible={visibleState}
+    onDismiss={onDismiss}
     >
-      <Pressable style={{flex:1}} onPress={() => onCloseModal()}>
+      <Pressable accessibilityRole='button' style={{flex:1}} onPress={() => {setVisibleState(false)}}>
         <View style={styles.centeredView} lightColor="transparent" darkColor="transparent">
           <View style={[styles.modalView,{
           borderColor:Colors[colorScheme ?? 'light'].borderColor,
           borderWidth:StyleSheet.hairlineWidth
           }]}>
-            <OpenText style={styles.modalText}>{message}</OpenText>
-            <Pressable focusable style={[styles.button]} onPress={() => onCloseModal()}>
+            <OpenTextStyled style={styles.modalText}>{message}</OpenTextStyled>
+            <Pressable accessibilityRole='button' focusable style={[styles.button]} onPress={() => setVisibleState(false)}>
               <MaterialCommunityIcons 
               name="close" 
               size={20} 

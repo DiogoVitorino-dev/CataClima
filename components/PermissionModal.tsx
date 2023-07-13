@@ -1,26 +1,30 @@
-import React, {useState} from 'react';
-import {Alert, Modal, StyleSheet, Pressable, View, useColorScheme, Platform} from 'react-native';
-import {Text} from './Themed';
+import React, { useEffect, useState } from 'react';
+import {Modal, StyleSheet, Pressable, View, useColorScheme, Platform} from 'react-native';
 import Colors from '../constants/Colors';
+import { OpenTextStyled } from './StyledText';
 
 export default function PermissionModal({
-  isModalVisible,
-  onRequestClose,
+  visible,
+  onDismiss,
   onPressFirstButton,
   onPressSecondButton,
 }: {
-  isModalVisible: boolean;
-  onRequestClose: Function;
-  onPressFirstButton: Function;
-  onPressSecondButton: Function;
+  visible: boolean;
+  onDismiss: () => void;
+  onPressFirstButton: () => void;
+  onPressSecondButton: () => void;
 }) {
+  const [visibleState,setVisibleState] = useState(false)
   const colorScheme = useColorScheme();
+  
+  useEffect(() => setVisibleState(visible), [visible])
+  
   return (
     <Modal 
-      animationType="fade" 
-      transparent={true} 
-      visible={isModalVisible} 
-      onRequestClose={() => onRequestClose()}
+      animationType="fade"
+      visible={visibleState}
+      transparent={true}
+      onDismiss={onDismiss}
     >
       <View style={styles.centeredView}>
         <View
@@ -30,16 +34,16 @@ export default function PermissionModal({
               backgroundColor: Colors[colorScheme ?? 'light'].background,
             },
           ]}>
-          <Text style={styles.modalText}>
+          <OpenTextStyled style={styles.modalText}>
             CataClima necessita da sua permissão para usar o seu local e entregar a previsão do tempo da sua cidade.
-          </Text>
+          </OpenTextStyled>
           {Platform.OS === 'web' ? (
-            <Text 
+            <OpenTextStyled 
               style={[
                 styles.modalText, 
               {fontSize: 16, opacity: 0.8}]}>
               Recarregue a página, caso necessário, verifique a permissão de localização do seu navegador.
-            </Text>
+            </OpenTextStyled>
           ) : null}
           <Pressable
             style={[
@@ -48,11 +52,12 @@ export default function PermissionModal({
                 backgroundColor: '#198754',
               },
             ]}
+            accessibilityRole='button'
             onPress={() => {
               onPressFirstButton();
-              onRequestClose();
+              setVisibleState(false)              
             }}>
-            <Text style={styles.textStyle}>Usar a minha localização</Text>
+            <OpenTextStyled style={styles.textStyle}>Usar a minha localização</OpenTextStyled>
           </Pressable>
           <Pressable
             style={[
@@ -61,11 +66,12 @@ export default function PermissionModal({
                 backgroundColor: '#808080',
               },
             ]}
+            accessibilityRole='button'
             onPress={() => {
               onPressSecondButton();
-              onRequestClose();
+              setVisibleState(false)              
             }}>
-            <Text style={styles.textStyle}>Escolher uma cidade</Text>
+            <OpenTextStyled style={styles.textStyle}>Escolher uma cidade</OpenTextStyled>
           </Pressable>
         </View>
       </View>

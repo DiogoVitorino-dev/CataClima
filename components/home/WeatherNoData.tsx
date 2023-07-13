@@ -1,5 +1,5 @@
 import { StyleSheet, View } from "react-native";
-import { OpenText } from "../StyledText";
+import { OpenTextStyled } from "../StyledText";
 import Button from "../Button";
 import { useRouter } from "expo-router";
 
@@ -13,12 +13,12 @@ export default function WeatherNoData(
 
     return (
         <View style={styles.centeredView}>
-            <OpenText style={styles.noDataText}>
+            <OpenTextStyled style={styles.noDataText}>
                 Ainda não escolheu uma cidade?  
-            </OpenText>
-            <OpenText style={[styles.noDataText,{opacity:0.5,fontSize:16}]}>
+            </OpenTextStyled>
+            <OpenTextStyled style={[styles.noDataText,{opacity:0.5,fontSize:16}]}>
                 Escolha uma das opções abaixo.
-            </OpenText>
+            </OpenTextStyled>
             <Button 
                 label='Usar minha localização' 
                 onPress={() => onPressMyLocationWeather()}

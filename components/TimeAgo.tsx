@@ -1,5 +1,5 @@
 import { formatDistanceToNow,Locale, parseISO } from "date-fns"
-import { OpenTextDefault } from "./StyledText"
+import { OpenText } from "./StyledText"
 
 const localeTranslated = {
     code:'pt',
@@ -21,17 +21,28 @@ const localeTranslated = {
     }                   
 } as Locale
 
-export default function TimeAgo({time}:{time:string}) {
-    time = formatDistanceToNow(parseISO(time),{locale:localeTranslated}) 
+export default function TimeAgo({dateIsoFormat}:{dateIsoFormat:string}) {
+
+    const formatDate = () => {
+        try {
+            const dateFormat = parseISO(dateIsoFormat)
+            return formatDistanceToNow(dateFormat,{locale:localeTranslated})
+        } catch (error:any) {
+            console.log(error.message);            
+        }
+
+        return ''
+    }
     
 
+   
     return (
-        <OpenTextDefault style={{
+        <OpenText style={{
             fontSize:14,
             color:'#fff',
             opacity:0.8
         }}>
-            {time}  
-        </OpenTextDefault>
+            {formatDate()}  
+        </OpenText>
     )        
 }

@@ -1,8 +1,9 @@
 import FontAwesome from '@expo/vector-icons/FontAwesome';
 import { DarkTheme, DefaultTheme, ThemeProvider } from '@react-navigation/native';
 import { useFonts } from 'expo-font';
-import { SplashScreen, Stack } from 'expo-router';
-import { useEffect, useState } from 'react';
+import * as SplashScreen from 'expo-splash-screen';
+import { Stack } from 'expo-router';
+import { useCallback, useEffect, useState } from 'react';
 import { Platform, useColorScheme } from 'react-native';
 import { Provider } from 'react-redux';
 import Spinner from '../components/Spinner';
@@ -21,6 +22,9 @@ export const unstable_settings = {
 //Background Fetch
 WeatherBackgroundFetchTask().exec()
 
+if (Platform.OS !== 'web')
+  SplashScreen.preventAutoHideAsync()
+
 export default function RootLayout() {
   const [loaded,setLoaded] = useState(false)
   const [loadedFont, errorFont] = useFonts({
@@ -30,27 +34,37 @@ export default function RootLayout() {
 
   useEffect(() => { 
     (async function(){
-      await store.dispatch(retrieveWeathersFromDB()).unwrap()
-      await store.dispatch(getCurrentWeatherIDFromDB()).unwrap()
+      const saved = await store.dispatch(retrieveWeathersFromDB()).unwrap()
+      
+      if(saved.length > 0)
+        await store.dispatch(getCurrentWeatherIDFromDB()).unwrap()
     })()   
-    .finally(() => setTimeout(()=>setLoaded(true),500) )
+    .finally(() => {
+      if (Platform.OS === 'web')
+        setTimeout(()=>setLoaded(true),500)
+      else
+        setLoaded(true)
+    })
   },[])
+
+  useCallback(() => {
+    if (Platform.OS !== 'web' && loaded && loadedFont) SplashScreen.hideAsync()
+  } , [loaded,loadedFont] )
     
 
   useEffect(() => {
     if (errorFont) throw errorFont;
   }, [errorFont]);
-
+  
   if (!loadedFont || !loaded) 
-    if(Platform.OS === 'web') return <Spinner />
-    else return <SplashScreen />
+  if (Platform.OS === 'web')return <Spinner />
+  else return null
 
-  else if (loadedFont && loaded)
-    return (
-      <Provider store={store} >        
-        <RootLayoutNav />
-      </Provider>
-    )    
+  return (
+    <Provider store={store} >        
+      <RootLayoutNav />
+    </Provider>
+  )    
   
 }
 
@@ -73,8 +87,7 @@ function RootLayoutNav() {
             />
             <Stack.Screen name="managerCities" options={{
               title:'Manager Cities',
-              headerTitle: '', 
-              presentation: 'modal'}} />
+              headerTitle: ''}} />
           </Stack>        
       </ThemeProvider>
     </>

@@ -1,19 +1,19 @@
-import React, {useState} from 'react';
+import React, {useEffect, useState} from 'react';
 import {FlatList, ListRenderItemInfo, Platform, StyleSheet, useColorScheme} from 'react-native';
 import ListItem from './ListItem';
 import Colors from '../../constants/Colors';
-import { InitialWeatherProps, WeatherProps } from '../../constants/Interfaces';
+import { WeatherProps } from '../../constants/Interfaces';
 import { useAppDispatch, useAppSelector } from '../../redux/hooks';
 import { selectAllWeathers, weatherRemoved } from '../../redux/weather/WeatherSlice';
 import { useRouter } from 'expo-router';
 import { ICity } from 'country-state-city';
 import UserCitiesList from './UserCitiesLIst';
-import convertCountryCodeToName from '../../scripts/convertCountryCodeToName';
-
+import convertCountryCodeToName from '../../utils/convertCountryCodeToName';
 
 export default function CitiesList(
   {searchResultList}:
   {searchResultList:Array<ICity>}) {  
+  const [data,setData] = useState<Array<ICity>>([])
   const colorScheme =  useColorScheme()
   const router = useRouter()
   const dispatch = useAppDispatch()
@@ -30,12 +30,14 @@ export default function CitiesList(
   const handleRemovedCity = (data:ListRenderItemInfo<WeatherProps>) => {
     dispatch(weatherRemoved(data.item.id)) 
   }
-  
+
+  useEffect(() => setData(searchResultList),[searchResultList])
+
 
 
   return (
     <FlatList
-      data={searchResultList}
+      data={data}
       style={styles.list}
       showsVerticalScrollIndicator={Platform.OS === 'web'}      
       contentContainerStyle={{borderRadius: 5}}

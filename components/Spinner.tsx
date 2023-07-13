@@ -1,19 +1,16 @@
-import { ActivityIndicator, useColorScheme } from "react-native";
+import { Image, useColorScheme } from "react-native";
 import { View } from "./Themed";
-import Colors from "../constants/Colors";
 
 export default function Spinner() {
     const colorScheme = useColorScheme()
-
+    
     return (
-        <View style={{
-            flex:1,
-            justifyContent:'center',
-            alignItems:'center'}}
-        >
-            <ActivityIndicator 
-            size="large" 
-            color={Colors[colorScheme ?? 'light'].icon} />
+        <View style={{flex:1,justifyContent:'center',alignItems:'center'}}>
+            {colorScheme === 'dark' ? (
+                <Image style={{width:300,height:300}} source={require('../assets/images/loading-light.gif')} />
+            ) : (
+                <Image style={{width:300,height:300}} source={require('../assets/images/loading-dark.gif')} />
+            )}           
         </View>
     )
     
