@@ -16,12 +16,12 @@ Foi Utilizado:
 - Entre outros.
 
 ## [Preview Web](https://64b04034f4c88331d631fc7c--cataclima.netlify.app/) 🖥️
-## [Preview Android (APK)]() 🤖 <sub><sup>Ainda não disponível</sup></sub>
-## [Preview IOS]() 🍏 <sub><sup>Ainda não disponível</sup></sub>
+## [Preview Android (APK)](https://github.com/DiogoVitorino-dev/CataClima/releases/tag/0.2.0-alpha) 🤖 
+## [Preview IOS](https://github.com/DiogoVitorino-dev/CataClima/releases/tag/0.2.0-alpha) 🍏
 
 # Futuro
 
- ## Nova funcionalidade (Disponível apenas no Brasil)
+ ## Nova funcionalidade <sub><sup>(Disponível apenas no Brasil)</sup></sub>
    
  - Nova página para exibir alertas meteorológicos e armazená-los em um historicos para cada cidade
  - Notificar quando um alerta for acionado (Disponível somente em dispositivos móveis)
