@@ -21,7 +21,8 @@
         "UIBackgroundModes": [
           "fetch"
         ]
-      }
+      },
+      "bundleIdentifier": "CataClima"
     },
     "android": {
       "adaptiveIcon": {
