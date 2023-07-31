@@ -25,9 +25,3 @@ Foi Utilizado:
    
  - Nova página para exibir alertas meteorológicos e armazená-los em um historicos para cada cidade
  - Notificar quando um alerta for acionado (Disponível somente em dispositivos móveis)
-
-## Nova versão
-   
- - Modificar toda a logica do App para adequar a um padrão de arquitetura (Architectural pattern)
- - O padrão MVVM foi escolhido porém, tem a posssibilidade de escolha de outro padrão.
-
