@@ -1,5 +1,4 @@
 import NetInfo from '@react-native-community/netinfo';
-import * as project from '../../../cache/project.json';
 import { CoordinatesProps, Flags, WeatherProps } from '../../constants';
 import { CountryStateCities } from '../../libs';
 import { convertCountryCodeToName } from '../../utils';
@@ -8,10 +7,11 @@ import { convertCountryCodeToName } from '../../utils';
 const getWeatherData = async (coords:CoordinatesProps) => {  
 	const {isConnected} = await NetInfo.fetch();
 	if (isConnected) {
-		const weatherInfo = await fetch(`https://api.openweathermap.org/data/2.5/weather?lat=${coords.latitude}&lon=${coords.longitude}&appid=${project.WeatherApiKey}&units=metric&lang=pt_br`);    
+		const APIKEY = process.env.WEATHER_APIKEY;
+		const weatherInfo = await fetch(`https://api.openweathermap.org/data/2.5/weather?lat=${coords.latitude}&lon=${coords.longitude}&appid=${APIKEY}&units=metric&lang=pt_br`);    
 
 		const minmaxTempInfo = await fetch(
-			`https://api.openweathermap.org/data/2.5/forecast?lat=${coords.latitude}&lon=${coords.longitude}&cnt=1&appid=${project.WeatherApiKey}&units=metric`,
+			`https://api.openweathermap.org/data/2.5/forecast?lat=${coords.latitude}&lon=${coords.longitude}&cnt=1&appid=${APIKEY}&units=metric`,
 		);
 
 		if(weatherInfo.ok && minmaxTempInfo.ok) {
