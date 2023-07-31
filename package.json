@@ -11,7 +11,7 @@
   "jest": {
     "preset": "jest-expo",
     "setupFilesAfterEnv": [
-      "./_test_/_mocks_/globalMocks.ts"
+      "./src/__test__/__mocks__/globalMocks.ts"
     ],
     "transformIgnorePatterns": [
       "node_modules/(?!((jest-)?react-native|@react-native(-community)?)|expo(nent)?|@expo(nent)?/.*|@expo-google-fonts/.*|react-navigation|@react-navigation/.*|@unimodules/.*|unimodules|sentry-expo|native-base|react-native-svg)"
@@ -22,8 +22,7 @@
     "@react-native-async-storage/async-storage": "1.17.11",
     "@react-native-community/netinfo": "9.3.7",
     "@react-navigation/native": "^6.0.2",
-    "@reduxjs/toolkit": "^1.9.5",
-    "@types/react-test-renderer": "^18.0.0",
+    "@reduxjs/toolkit": "^1.9.5",    
     "country-state-city": "^3.1.4",
     "date-fns": "^2.30.0",
     "expo": "~48.0.18",
@@ -55,6 +54,7 @@
     "@jest/globals": "^29.6.1",
     "@testing-library/jest-native": "^5.4.2",
     "@testing-library/react-native": "^12.1.2",
+    "@types/react-test-renderer": "^18.0.0",
     "@types/react": "~18.0.14",
     "@typescript-eslint/eslint-plugin": "^5.61.0",
     "@typescript-eslint/parser": "^5.61.0",

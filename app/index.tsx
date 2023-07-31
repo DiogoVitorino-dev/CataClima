@@ -8,25 +8,25 @@ import { useLocalSearchParams, useNavigation, useRouter } from 'expo-router';
 import { useCallback, useEffect, useState } from 'react'
 import { LinearGradient } from 'expo-linear-gradient'
 
-import LocationLib from '../libs/Location/Location';
+import LocationLib from '../src/libs/Location/Location';
 
-import Colors from '../constants/Colors';
-import { CoordinatesProps } from '../constants/Interfaces';
+import Colors from '../src/constants/Colors';
+import { CoordinatesProps } from '../src/constants/Interfaces';
 
-import { View } from '../components/Themed';
-import WeatherDetail from '../components/home/WeatherDetail';
-import PermissionModal from '../components/PermissionModal';
-import HeaderButton from '../components/HeaderButton';
-import Flags from '../constants/Flags';
-import CustomTheme from '../constants/CustomTheme';
-import SimpleModal from '../components/SimpleModal';
-import Spinner from '../components/Spinner';
-import TimeAgo from '../components/TimeAgo';
-import WeatherStatus from '../components/home/WeatherStatus';
-import WeatherNoData from '../components/home/WeatherNoData';
-import WeatherItem from '../components/home/WeatherItem';
+import { View } from '../src/components/Themed';
+import WeatherDetail from '../src/components/home/WeatherDetail';
+import PermissionModal from '../src/components/PermissionModal';
+import HeaderButton from '../src/components/HeaderButton';
+import Flags from '../src/constants/Flags';
+import CustomTheme from '../src/constants/CustomTheme';
+import SimpleModal from '../src/components/SimpleModal';
+import Spinner from '../src/components/Spinner';
+import TimeAgo from '../src/components/TimeAgo';
+import WeatherStatus from '../src/components/home/WeatherStatus';
+import WeatherNoData from '../src/components/home/WeatherNoData';
+import WeatherItem from '../src/components/home/WeatherItem';
 
-import { useAppDispatch, useAppSelector } from '../redux/hooks';
+import { useAppDispatch, useAppSelector } from '../src/store/hooks';
 import { 
   resetError, 
   resetStatus,
@@ -39,10 +39,10 @@ import {
   fetchWeather,
   retrieveWeathersFromDB,
   getCurrentWeatherIDFromDB
-} from '../redux/weather/WeatherSlice';
+} from '../src/store/weather/WeatherSlice';
 import { ICity } from 'country-state-city';
-import AnimatedBackground from '../components/home/AnimatedBackground';
-import DatetimeUtils from '../utils/DatetimeUtils';
+import AnimatedBackground from '../src/components/home/AnimatedBackground';
+import DatetimeUtils from '../src/utils/DatetimeUtils';
 import { StatusBar } from 'expo-status-bar';
 
 export default function Home() {

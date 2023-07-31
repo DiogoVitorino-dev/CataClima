@@ -1,6 +1,6 @@
 import NetInfo from '@react-native-community/netinfo';
 import Flags from '../../constants/Flags';
-import * as project from '../../cache/project.json'
+import * as project from '../../../cache/project.json'
 import { WeatherProps, CoordinatesProps } from '../../constants/Interfaces';
 import convertCountryCodeToName from '../../utils/convertCountryCodeToName';
 import CountryStateCities from '../../libs/CountryStateCities/CountryStateCities';

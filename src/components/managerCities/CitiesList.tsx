@@ -3,8 +3,8 @@ import {FlatList, ListRenderItemInfo, Platform, StyleSheet, useColorScheme} from
 import ListItem from './ListItem';
 import Colors from '../../constants/Colors';
 import { WeatherProps } from '../../constants/Interfaces';
-import { useAppDispatch, useAppSelector } from '../../redux/hooks';
-import { selectAllWeathers, weatherRemoved } from '../../redux/weather/WeatherSlice';
+import { useAppDispatch, useAppSelector } from '../../store/hooks';
+import { selectAllWeathers, weatherRemoved } from '../../store/weather/WeatherSlice';
 import { useRouter } from 'expo-router';
 import { ICity } from 'country-state-city';
 import UserCitiesList from './UserCitiesLIst';

@@ -6,10 +6,10 @@ import { Stack } from 'expo-router';
 import { useCallback, useEffect, useState } from 'react';
 import { Platform, useColorScheme } from 'react-native';
 import { Provider } from 'react-redux';
-import Spinner from '../components/Spinner';
-import store from '../redux/store';
-import { getCurrentWeatherIDFromDB, retrieveWeathersFromDB } from '../redux/weather/WeatherSlice';
-import WeatherBackgroundFetchTask from '../services/weather/WeatherBackgroundFetch';
+import Spinner from '../src/components/Spinner';
+import store from '../src/store/store';
+import { getCurrentWeatherIDFromDB, retrieveWeathersFromDB } from '../src/store/weather/WeatherSlice';
+import WeatherBackgroundFetchTask from '../src/services/weather/WeatherBackgroundFetch';
 
 export {  
   ErrorBoundary,
@@ -28,7 +28,7 @@ if (Platform.OS !== 'web')
 export default function RootLayout() {
   const [loaded,setLoaded] = useState(false)
   const [loadedFont, errorFont] = useFonts({
-    OpenSans: require('../assets/fonts/OpenSans-Regular.ttf'),
+    OpenSans: require('../src/assets/fonts/OpenSans-Regular.ttf'),
     ...FontAwesome.font,
   });
 
@@ -74,7 +74,7 @@ function RootLayoutNav() {
   return (
     <>
       <ThemeProvider value={colorScheme === 'dark' ? DarkTheme : DefaultTheme}>        
-          <Stack>
+          <Stack initialRouteName={unstable_settings.initialRouteName}>
             <Stack.Screen
               name="index"
               options={{

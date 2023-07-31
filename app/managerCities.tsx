@@ -1,13 +1,13 @@
 import {StyleSheet, useColorScheme} from 'react-native';
-import {View} from '../components/Themed';
-import Searchbar from '../components/Searchbar';
+import {View} from '../src/components/Themed';
+import Searchbar from '../src/components/Searchbar';
 import { useEffect,  useState } from 'react';
-import CitiesList from '../components/managerCities/CitiesList';
+import CitiesList from '../src/components/managerCities/CitiesList';
 import { ICity } from 'country-state-city';
-import { useAppSelector } from '../redux/hooks';
-import { selectAllWeathers } from '../redux/weather/WeatherSlice';
-import { OpenTextStyled } from '../components/StyledText';
-import CountryStateCities from '../libs/CountryStateCities/CountryStateCities';
+import { useAppSelector } from '../src/store/hooks';
+import { selectAllWeathers } from '../src/store/weather/WeatherSlice';
+import { OpenTextStyled } from '../src/components/StyledText';
+import CountryStateCities from '../src/libs/CountryStateCities/CountryStateCities';
 
 
 export default function ManagerCities() {

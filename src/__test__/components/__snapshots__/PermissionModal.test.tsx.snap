@@ -1,0 +1,11 @@
+// Jest Snapshot v1, https://goo.gl/fbAQLP
+
+exports[`PermissionModal component should renders correctly 1`] = `
+<Modal
+  animationType="fade"
+  hardwareAccelerated={false}
+  onDismiss={[Function]}
+  transparent={true}
+  visible={false}
+/>
+`;

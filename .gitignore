@@ -1,6 +1,4 @@
 node_modules
-__snapshots__
-__test__
 cache
 dist
 # Local Netlify folder
