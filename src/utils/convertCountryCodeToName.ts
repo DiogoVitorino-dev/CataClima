@@ -1,4 +1,4 @@
-export default function convertCountryCodeToName (countryCode:string) {   
+export function convertCountryCodeToName (countryCode:string) {   
  
-  return countryCode
+	return countryCode;
 } 
