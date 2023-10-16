@@ -7,15 +7,15 @@ import { Stack } from 'expo-router';
 import { Platform, useColorScheme } from 'react-native';
 import { Provider } from 'react-redux';
 import store from '../store/store';
-import { getCurrentWeatherIDFromDB, retrieveWeathersFromDB } from '../store/weather/WeatherSlice';
+import { getCurrentWeatherIDFromDB, retrieveWeathersFromDB } from '../store/weather/WeatherThunks';
 import { WeatherBackgroundFetchTask } from '../services/weather';
 import { Loading } from '../components/shared';
 
-export {  
+export {
 	ErrorBoundary,
 } from 'expo-router';
 
-export const unstable_settings = {  
+export const unstable_settings = {
 	initialRouteName: 'index',
 };
 
@@ -32,13 +32,13 @@ export default function RootLayout() {
 		...FontAwesome.font,
 	});
 
-	useEffect(() => { 
+	useEffect(() => {
 		(async function(){
 			const saved = await store.dispatch(retrieveWeathersFromDB()).unwrap();
-      
+
 			if(saved.length > 0)
 				await store.dispatch(getCurrentWeatherIDFromDB()).unwrap();
-		})()   
+		})()
 			.finally(() => {
 				if (Platform.OS === 'web')
 					setTimeout(()=>setLoaded(true),500);
@@ -50,22 +50,22 @@ export default function RootLayout() {
 	useCallback(() => {
 		if (Platform.OS !== 'web' && loaded && loadedFont) SplashScreen.hideAsync();
 	} , [loaded,loadedFont] );
-    
+
 
 	useEffect(() => {
 		if (errorFont) throw errorFont;
 	}, [errorFont]);
-  
-	if (!loadedFont || !loaded) 
+
+	if (!loadedFont || !loaded)
 		if (Platform.OS === 'web')return <Loading />;
 		else return null;
 
 	return (
-		<Provider store={store} >        
+		<Provider store={store} >
 			<RootLayoutNav />
 		</Provider>
-	);    
-  
+	);
+
 }
 
 function RootLayoutNav() {
@@ -73,7 +73,7 @@ function RootLayoutNav() {
 
 	return (
 		<>
-			<ThemeProvider value={colorScheme === 'dark' ? DarkTheme : DefaultTheme}>        
+			<ThemeProvider value={colorScheme === 'dark' ? DarkTheme : DefaultTheme}>
 				<Stack initialRouteName={unstable_settings.initialRouteName}>
 					<Stack.Screen
 						name="index"
@@ -82,13 +82,13 @@ function RootLayoutNav() {
 							headerTitleAlign: 'center',
 							headerTintColor: '#fff',
 							headerTransparent: true,
-							headerBlurEffect:'regular'                           
+							headerBlurEffect:'regular'
 						}}
 					/>
 					<Stack.Screen name="managerCities" options={{
 						title:'Manager Cities',
 						headerTitle: ''}} />
-				</Stack>        
+				</Stack>
 			</ThemeProvider>
 		</>
 	);

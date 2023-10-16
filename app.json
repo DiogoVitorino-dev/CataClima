@@ -54,6 +54,10 @@
         "projectId": "6a268a04-c1e6-4c8b-8125-ea4e0bb60e0f"
       }
     },
-    "owner": "diogovitorino_dev"
+    "owner": "diogovitorino_dev",
+		"experiments": {
+      "tsconfigPaths": false
+    }
+
   }
 }

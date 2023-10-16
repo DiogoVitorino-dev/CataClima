@@ -1,3 +1,5 @@
+import FontAwesome from '@expo/vector-icons/FontAwesome';
+
 export interface CoordinatesProps {
     latitude:number
     longitude:number
@@ -22,7 +24,7 @@ export const InitialWeatherProps:WeatherProps = {
 	weatherMain:'',
 	wind:0,
 	windUnit:''
-      
+
 };
 
 export interface WeatherProps {
@@ -41,8 +43,10 @@ export interface WeatherProps {
     wind: number;
     windUnit: string
     weatherDescription: string;
-    coords: {latitude:number,longitude:number}    
+    coords: {latitude:number,longitude:number}
     weatherMain: string;
     datetime: string;
 }
+
+export type IconsFontAwesome = keyof typeof FontAwesome.glyphMap;
 

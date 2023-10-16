@@ -1,68 +1,65 @@
-import NetInfo from '@react-native-community/netinfo';
-import { CoordinatesProps, Flags, WeatherProps } from '../../constants';
-import { CountryStateCities } from '../../libs';
-import { convertCountryCodeToName } from '../../utils';
+import NetInfo from "@react-native-community/netinfo";
+
+import WeatherAxios from "./AxiosConfig";
+import { CoordinatesProps, Flags, WeatherProps } from "../../constants";
+import { CountryStateCities } from "../../libs";
+import { convertCountryCodeToName } from "../../utils";
+
+import { OpenWeatherCurrentResponse } from "@/models/OpenWeather/OpenWeatherCurrentResponse";
+import { OpenWeatherForecastResponse } from "@/models/OpenWeather/OpenWeatherForecastResponse";
 
 // WeatherFetch
-const getWeatherData = async (coords:CoordinatesProps) => {  
-	const {isConnected} = await NetInfo.fetch();
+const getWeatherData = async (coords: CoordinatesProps) => {
+	const { isConnected } = await NetInfo.fetch();
 	if (isConnected) {
-		const APIKEY = process.env.WEATHER_APIKEY;
-		const weatherInfo = await fetch(`https://api.openweathermap.org/data/2.5/weather?lat=${coords.latitude}&lon=${coords.longitude}&appid=${APIKEY}&units=metric&lang=pt_br`);    
+		const customAxios = new WeatherAxios().instance;
 
-		const minmaxTempInfo = await fetch(
-			`https://api.openweathermap.org/data/2.5/forecast?lat=${coords.latitude}&lon=${coords.longitude}&cnt=1&appid=${APIKEY}&units=metric`,
+		const currentWeather = await customAxios.get<OpenWeatherCurrentResponse>(
+			`/weather?lat=${coords.latitude}&lon=${coords.longitude}`,
 		);
 
-		if(weatherInfo.ok && minmaxTempInfo.ok) {
+		const forecastWeather = await customAxios.get<OpenWeatherForecastResponse>(
+			`/forecast?lat=${coords.latitude}&lon=${coords.longitude}`,
+		);
 
-			const informationJSON = await weatherInfo.json();
-			const minMaxInfoJSON = await minmaxTempInfo.json();
+		const weatherData = currentWeather.data;
+		const forecastData = forecastWeather.data;
 
-			const state = await CountryStateCities()
-				.findStateCodeOfCity(informationJSON.sys.country,informationJSON.name);
+		const state = await CountryStateCities().findStateCodeOfCity(
+			weatherData.sys.country,
+			weatherData.name,
+		);
 
-			const country = convertCountryCodeToName(informationJSON.sys.country);
-      
-			const newWeather:WeatherProps = {
-				id:'',
-				city: informationJSON.name,
-				country: country,
-				state: state,
-				feelsLike: parseInt(minMaxInfoJSON.list[0].main.feels_like),
-				maxTemperature: parseInt(minMaxInfoJSON.list[0].main.temp_max),
-				minTemperature: parseInt(minMaxInfoJSON.list[0].main.temp_min),
-				humidity: informationJSON.main.humidity,
-				pressure: informationJSON.main.pressure,
-				pressureUnit:'mBar',
-				temperature: parseInt(informationJSON.main.temp),
-				temperatureUnit:'c',
-				wind: parseFloat((informationJSON.wind.speed * 3.6).toFixed(1)),
-				windUnit:'km/h',
-				weatherDescription: informationJSON.weather[0].description,
-				coords:{
-					latitude:coords.latitude,
-					longitude:coords.longitude
-				},
-				datetime: new Date().toISOString(),
-				weatherMain: informationJSON.weather[0].main.toLowerCase()
-			};     
+		const country = convertCountryCodeToName(weatherData.sys.country);
 
-			return newWeather;
+		const newWeather: WeatherProps = {
+			id: "",
+			city: weatherData.name,
+			country,
+			state,
+			feelsLike: forecastData.list[0].main.feels_like,
+			maxTemperature: forecastData.list[0].main.temp_max,
+			minTemperature: forecastData.list[0].main.temp_min,
+			humidity: weatherData.main.humidity,
+			pressure: weatherData.main.pressure,
+			pressureUnit: "mBar",
+			temperature: weatherData.main.temp,
+			temperatureUnit: "c",
+			wind: parseFloat((weatherData.wind.speed * 3.6).toFixed(1)),
+			windUnit: "km/h",
+			weatherDescription: weatherData.weather[0].description,
+			coords: {
+				latitude: coords.latitude,
+				longitude: coords.longitude,
+			},
+			datetime: new Date().toISOString(),
+			weatherMain: weatherData.weather[0].main.toLowerCase(),
+		};
 
-		} else
-
-		if (!minmaxTempInfo.ok)    
-			throw new Error(minmaxTempInfo.status + ' ' + minmaxTempInfo.statusText);
-		else
-			throw new Error(weatherInfo.status + ' ' + weatherInfo.statusText);
-
-	} else 
-		throw new Error(Flags.errors.NOCONNECTION);
+		return newWeather;
+	} else throw new Error(Flags.errors.NOCONNECTION);
 };
 
 export function WeatherService() {
-  
-	return {getWeatherData};
+	return { getWeatherData };
 }
-
