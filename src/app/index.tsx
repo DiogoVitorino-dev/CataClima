@@ -26,10 +26,7 @@ import {
 	View,
 } from "../components/shared";
 import { Colors, CoordinatesProps, CustomTheme, Flags } from "../constants";
-import { LocationLib } from "../libs";
 import { useAppDispatch, useAppSelector } from "../store/hooks";
-import { DatetimeUtils } from "../utils";
-
 import {
 	selectWeatherById,
 	selectWeatherRequestError,
@@ -37,13 +34,13 @@ import {
 } from "../store/weather/WeatherSelectors";
 import { resetError, resetStatus } from "../store/weather/WeatherSlice";
 import {
-	fetchAndUpdateWeather,
-	weatherAdded,
-	setCurrentWeatherID,
-	fetchWeather,
+	addWeather,
 	retrieveWeathersFromDB,
 	getCurrentWeatherIDFromDB,
+	updateWeather,
 } from "../store/weather/WeatherThunks";
+import { DatetimeUtils } from "../utils";
+import { getMyLocation } from "../services/location";
 
 export default function Home() {
 	const colorScheme = useColorScheme();
@@ -84,7 +81,7 @@ export default function Home() {
 			setBackgroundGradient(handleBackgroundGradient());
 
 			navigation.setOptions({
-				headerTitle: weather.city,
+				headerTitle: weather.location.city,
 
 				headerLeft: () =>
 					HeaderButton({
@@ -97,7 +94,7 @@ export default function Home() {
 
 				headerRight: () =>
 					HeaderButton({
-						onPress: updateWeather,
+						onPress: handleUpdateWeather,
 						icon: "refresh",
 						iconColor: "#fff",
 						iconSize: 30,
@@ -135,23 +132,15 @@ export default function Home() {
 		}
 	}, [weatherRequestError]);
 
-	useEffect(() => {
+	/*useEffect(() => {
 		if (weatherSelectedID && typeof weatherSelectedID === "string")
 			dispatch(setCurrentWeatherID(weatherSelectedID));
 		else if (searchedCity && typeof searchedCity === "string") {
 			const { latitude, longitude } = JSON.parse(searchedCity.trim()) as ICity;
 
-			if (latitude && longitude)
-				dispatch(
-					fetchWeather({
-						latitude: parseFloat(latitude),
-						longitude: parseFloat(longitude),
-					}),
-				)
-					.unwrap()
-					.then((response) => dispatch(weatherAdded(response)));
+			if (latitude && longitude) dispatch(addWeather({ latitude, longitude }));
 		}
-	}, [weatherSelectedID, searchedCity]);
+	}, [weatherSelectedID, searchedCity]);*/
 
 	// check
 
@@ -168,10 +157,10 @@ export default function Home() {
 	// Query weather
 	const getMyLocationCoords = async () => {
 		try {
-			return (await LocationLib().getMyLocation()) as CoordinatesProps;
+			return (await getMyLocation());
 		} catch (error: any) {
 			if (
-				error.message === Flags.errors.LOCATIONPERMISSIONDENIED ||
+				error.message === Flags.errors.LOCATION_PERMISSION_DENIED ||
 				error.code === 1
 			)
 				setPermissionModalVisible(true);
@@ -183,9 +172,7 @@ export default function Home() {
 			const coords = await getMyLocationCoords();
 
 			if (coords) {
-				const result = await dispatch(fetchWeather(coords)).unwrap();
-
-				if (result) await dispatch(weatherAdded(result)).unwrap();
+				await dispatch(addWeather(coords)).unwrap();
 			}
 		} catch (error: any) {
 			if (error.message === Flags.errors.NOCONNECTION)
@@ -195,9 +182,9 @@ export default function Home() {
 		}
 	};
 
-	const updateWeather = async () => {
+	const handleUpdateWeather = async () => {
 		try {
-			if (weather) await dispatch(fetchAndUpdateWeather(weather)).unwrap();
+			if (weather) await dispatch(updateWeather(weather)).unwrap();
 		} finally {
 			dispatch(resetStatus);
 		}
@@ -206,9 +193,9 @@ export default function Home() {
 	// Theme control
 	const handleBackgroundGradient = () => {
 		if (weather)
-			switch (weather.weatherMain) {
+			switch (weather.data.current) {
 				case Flags.WeatherApiState.SUNNY: {
-					if (DatetimeUtils().isNight(weather.datetime))
+					if (DatetimeUtils().isNight(weather.data.timeStamp.toString()))
 						return CustomTheme.gradient.night;
 					else return CustomTheme.gradient.sunny;
 				}
@@ -226,20 +213,7 @@ export default function Home() {
 	};
 
 	const handleIcon = () => {
-		if (weather)
-			switch (weather.weatherMain) {
-				case Flags.WeatherApiState.SUNNY: {
-					if (DatetimeUtils().isNight(weather.datetime)) return "moon";
-					else return "sunny";
-				}
-				case Flags.WeatherApiState.CLOUDY:
-					return "cloud";
-				case Flags.WeatherApiState.SNOW:
-				case Flags.WeatherApiState.RAINY:
-					return "rainy";
-			}
-
-		return "";
+		return "sunny";
 	};
 
 	// Navigation
@@ -288,7 +262,7 @@ export default function Home() {
 						<RefreshControl
 							progressViewOffset={50}
 							refreshing={isLoading}
-							onRefresh={() => updateWeather()}
+							onRefresh={() => handleUpdateWeather()}
 						/>
 					}
 				>
@@ -299,42 +273,42 @@ export default function Home() {
 								{ flex: 1, backgroundColor: "transparent" },
 							]}
 						>
-							<TimeAgo dateIsoFormat={weather.datetime} />
+							<TimeAgo dateIsoFormat={weather.data.timeStamp.toString()} />
 
 							<WeatherStatus
 								iconName={handleIcon()}
-								temp={weather.temperature + "°"}
-								tempMax={weather.maxTemperature + "°"}
-								tempMin={weather.minTemperature + "°"}
-								weatherDescription={weather.weatherDescription}
+								temp={weather.temperature.value + "°"}
+								tempMax={weather.temperature.max + "°"}
+								tempMin={weather.temperature.min + "°"}
+								weatherDescription={weather.data.description}
 							/>
 
 							<WeatherDetail
-								dayOfWeek={DatetimeUtils().getDayOfWeek(weather.datetime)}
+								dayOfWeek={DatetimeUtils().getDayOfWeek(new Date().toString())}
 							>
 								<WeatherItem
 									iconName="sun-thermometer-outline"
 									iconSize={30}
 									label="Sensação"
-									value={`${weather.feelsLike}°${weather.temperatureUnit}`}
+									value={`${weather.temperature.feelsLike}°${weather.temperature.unit}`}
 								/>
 								<WeatherItem
 									iconName="water-percent"
 									iconSize={30}
-									label="Humidade"
-									value={weather.humidity + "%"}
+									label="Umidade"
+									value={`${weather.humidity.value} ${weather.humidity.unit}`}
 								/>
 								<WeatherItem
 									iconName="weather-windy"
 									iconSize={30}
 									label="Vento"
-									value={`${weather.wind} ${weather.windUnit}`}
+									value={`${weather.wind.value} ${weather.wind.unit}`}
 								/>
 								<WeatherItem
 									iconName="thermostat-box"
 									iconSize={30}
 									label="Pressão"
-									value={`${weather.pressure} ${weather.pressureUnit}`}
+									value={`${weather.pressure.value} ${weather.pressure.unit}`}
 								/>
 							</WeatherDetail>
 							<AnimatedBackground />

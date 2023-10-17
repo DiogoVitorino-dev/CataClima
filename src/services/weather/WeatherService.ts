@@ -1,15 +1,16 @@
 import NetInfo from "@react-native-community/netinfo";
+import { parseISO } from "date-fns";
 
 import WeatherAxios from "./AxiosConfig";
-import { CoordinatesProps, Flags, WeatherProps } from "../../constants";
+import { Flags } from "../../constants";
 import { CountryStateCities } from "../../libs";
+import IWeather, { ICoordinates } from "../../models/WeatherModel";
+import { OpenWeatherCurrentResponse } from "../../models/openWeather/OpenWeatherCurrentResponse";
+import { OpenWeatherForecastResponse } from "../../models/openWeather/OpenWeatherForecastResponse";
 import { convertCountryCodeToName } from "../../utils";
 
-import { OpenWeatherCurrentResponse } from "@/models/OpenWeather/OpenWeatherCurrentResponse";
-import { OpenWeatherForecastResponse } from "@/models/OpenWeather/OpenWeatherForecastResponse";
-
 // WeatherFetch
-const getWeatherData = async (coords: CoordinatesProps) => {
+const getWeatherData = async (coords: ICoordinates, id = "") => {
 	const { isConnected } = await NetInfo.fetch();
 	if (isConnected) {
 		const customAxios = new WeatherAxios().instance;
@@ -32,28 +33,42 @@ const getWeatherData = async (coords: CoordinatesProps) => {
 
 		const country = convertCountryCodeToName(weatherData.sys.country);
 
-		const newWeather: WeatherProps = {
-			id: "",
-			city: weatherData.name,
-			country,
-			state,
-			feelsLike: forecastData.list[0].main.feels_like,
-			maxTemperature: forecastData.list[0].main.temp_max,
-			minTemperature: forecastData.list[0].main.temp_min,
-			humidity: weatherData.main.humidity,
-			pressure: weatherData.main.pressure,
-			pressureUnit: "mBar",
-			temperature: weatherData.main.temp,
-			temperatureUnit: "c",
-			wind: parseFloat((weatherData.wind.speed * 3.6).toFixed(1)),
-			windUnit: "km/h",
-			weatherDescription: weatherData.weather[0].description,
+		const newWeather: IWeather = {
+			id,
 			coords: {
-				latitude: coords.latitude,
-				longitude: coords.longitude,
+				latitude: weatherData.coord.lat,
+				longitude: weatherData.coord.lon,
 			},
-			datetime: new Date().toISOString(),
-			weatherMain: weatherData.weather[0].main.toLowerCase(),
+			data: {
+				current: weatherData.weather[0].main.toLowerCase(),
+				description: weatherData.weather[0].description,
+				timeStamp: weatherData.dt,
+				icon: "cloud",
+			},
+			humidity: {
+				value: weatherData.main.humidity,
+				unit: "%",
+			},
+			wind: {
+				value: weatherData.wind.speed * 3.6,
+				unit: "km/h",
+			},
+			location: {
+				city: weatherData.name,
+				country,
+				state,
+			},
+			pressure: {
+				value: weatherData.main.pressure,
+				unit: "mBar",
+			},
+			temperature: {
+				value: weatherData.main.temp,
+				feelsLike: forecastData.list[0].main.feels_like,
+				max: forecastData.list[0].main.temp_max,
+				min: forecastData.list[0].main.temp_min,
+				unit: "c",
+			},
 		};
 
 		return newWeather;

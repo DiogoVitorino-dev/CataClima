@@ -1,55 +1,59 @@
 import { createAsyncThunk, nanoid } from "@reduxjs/toolkit";
 
-import { CoordinatesProps, WeatherProps } from "../../constants";
-import UserWeathersDatabase from "../../database/UserWeathersDatabase";
+import WeatherPreferenceRepository from "../../database/WeatherPreferenceRepository";
+import WeatherRepository from "../../database/WeatherRepository";
+import IWeather, { ICoordinates } from "../../models/WeatherModel";
 import { WeatherService } from "../../services/weather";
+import { RootState } from "../store";
 
-export const fetchAndUpdateWeather = createAsyncThunk(
-	"weathers/fetchAndUpdateWeather",
-	async (state: WeatherProps) => {
-		const result = await WeatherService().getWeatherData(state.coords);
-		result.id = state.id;
-		await UserWeathersDatabase().updateWeatherDB(result);
+export const addWeather = createAsyncThunk(
+	"weathers/addWeather",
+	async (coords: ICoordinates) => {
+		const result = await WeatherService().getWeatherData(coords);
+		result.id = nanoid();
+		await new WeatherRepository().set(result.id, result);
 		return result;
 	},
 );
 
-export const fetchWeather = createAsyncThunk(
+export const updateWeather = createAsyncThunk(
 	"weathers/fetchWeather",
-	async (coords: CoordinatesProps) => WeatherService().getWeatherData(coords),
+	async (oldValue: IWeather) => {
+		const result = await WeatherService().getWeatherData(
+			oldValue.coords,
+			oldValue.id,
+		);
+		await new WeatherRepository().set(result.id, result);
+		return result;
+	},
 );
 
 export const retrieveWeathersFromDB = createAsyncThunk(
 	"weathers/retrieveWeathersFromDB",
-	async () => await UserWeathersDatabase().getAllWeathersDB(),
+	async () => await new WeatherRepository().get(),
 );
 
 export const getCurrentWeatherIDFromDB = createAsyncThunk(
 	"weathers/getCurrentWeatherIDFromDB",
-	async () => await UserWeathersDatabase().getCurrentWeatherID(),
+	async () => await new WeatherPreferenceRepository().getPreference(),
 );
 
 export const setCurrentWeatherID = createAsyncThunk(
 	"weathers/setCurrentWeatherID",
-	async (newCurrentWeatherID: string) =>
-		await UserWeathersDatabase().setCurrentWeatherID(newCurrentWeatherID),
-);
-
-export const weatherAdded = createAsyncThunk(
-	"weathers/weatherAdded",
-	async (weather: WeatherProps) => {
-		weather.id = nanoid();
-		await UserWeathersDatabase().addWeatherDB(weather);
-		await UserWeathersDatabase().setCurrentWeatherID(weather.id);
-		return weather;
+	async (newCurrentWeatherID: IWeather) => {
+		await new WeatherPreferenceRepository().setPreference(newCurrentWeatherID);
+		return newCurrentWeatherID.id;
 	},
 );
 
-export const weatherRemoved = createAsyncThunk(
-	"weathers/weatherRemoved",
-	async (weatherID: string, { dispatch }) => {
-		await UserWeathersDatabase().deleteWeatherDB(weatherID);
-		await dispatch(getCurrentWeatherIDFromDB()).unwrap();
-		return weatherID;
-	},
-);
+export const weatherRemoved = createAsyncThunk<
+	string,
+	string,
+	{ state: RootState }
+>("weathers/weatherRemoved", async (key: string, { getState }) => {
+	await new WeatherRepository().delete(key);
+	if (getState().weathers.currentWeatherID === key)
+		await new WeatherPreferenceRepository().removePreference();
+
+	return key;
+});

@@ -1,18 +1,21 @@
 import { IconsFontAwesome } from "../constants";
 
-export interface Weather {
+export default interface IWeather {
 	id: string;
+	location: ILocation;
+	humidity: IHumidity;
 	temperature: ITemperature;
-	information: IWeather;
+	data: IWeatherData;
 	wind: IWind;
+	pressure: IPressure;
 	coords: ICoordinates;
 }
 
-interface IWeather {
+export interface IWeatherData {
 	current: string;
 	description: string;
 	icon: IconsFontAwesome;
-	timeStamp: Date;
+	timeStamp: number;
 }
 
 export interface ICoordinates {
@@ -26,7 +29,7 @@ export interface ILocation {
 	country: string;
 }
 
-interface IMeasurable {
+export interface IMeasurable {
 	value: number;
 	unit: string;
 }

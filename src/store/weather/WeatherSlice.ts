@@ -8,15 +8,14 @@ import {
 } from "@reduxjs/toolkit";
 
 import {
-	fetchAndUpdateWeather,
-	fetchWeather,
+	addWeather,
+	updateWeather,
 	getCurrentWeatherIDFromDB,
 	retrieveWeathersFromDB,
 	setCurrentWeatherID,
-	weatherAdded,
 	weatherRemoved,
 } from "./WeatherThunks";
-import { WeatherProps } from "../../constants";
+import IWeather from "../../models/WeatherModel";
 import { RootState } from "../store";
 
 export interface WeatherStateProps {
@@ -25,7 +24,13 @@ export interface WeatherStateProps {
 	error: null | SerializedError;
 }
 
-const weatherAdapter = createEntityAdapter<WeatherProps>();
+const weatherAdapter = createEntityAdapter<IWeather>({
+	sortComparer: (a, b) => {
+		if (a.location.city > b.location.city) return 1;
+		if (a.location.city < b.location.city) return -1;
+		return 0;
+	},
+});
 
 const initialState = weatherAdapter.getInitialState({
 	currentWeatherID: "",
@@ -34,9 +39,8 @@ const initialState = weatherAdapter.getInitialState({
 } as WeatherStateProps);
 
 const genericIsPending = isPending(
-	fetchAndUpdateWeather,
-	fetchWeather,
-	weatherAdded,
+	addWeather,
+	updateWeather,
 	weatherRemoved,
 	retrieveWeathersFromDB,
 	setCurrentWeatherID,
@@ -44,9 +48,8 @@ const genericIsPending = isPending(
 );
 
 const genericIsFulfilled = isFulfilled(
-	fetchAndUpdateWeather,
-	fetchWeather,
-	weatherAdded,
+	addWeather,
+	updateWeather,
 	weatherRemoved,
 	retrieveWeathersFromDB,
 	setCurrentWeatherID,
@@ -54,9 +57,8 @@ const genericIsFulfilled = isFulfilled(
 );
 
 const genericIsRejected = isRejected(
-	fetchAndUpdateWeather,
-	fetchWeather,
-	weatherAdded,
+	addWeather,
+	updateWeather,
 	weatherRemoved,
 	retrieveWeathersFromDB,
 	setCurrentWeatherID,
@@ -77,12 +79,14 @@ const weathersSlice = createSlice({
 	},
 	extraReducers(builder) {
 		builder
-			.addCase(fetchAndUpdateWeather.fulfilled, (state, action) => {
+			.addCase(updateWeather.fulfilled, (state, action) => {
 				weatherAdapter.upsertOne(state, action.payload);
 			})
 
-			.addCase(weatherAdded.fulfilled, (state, action) => {
+			.addCase(addWeather.fulfilled, (state, action) => {
 				weatherAdapter.upsertOne(state, action.payload);
+				console.log(action.payload);
+
 				state.currentWeatherID = action.payload.id;
 			})
 
@@ -95,7 +99,7 @@ const weathersSlice = createSlice({
 			})
 
 			.addCase(getCurrentWeatherIDFromDB.fulfilled, (state, action) => {
-				state.currentWeatherID = action.payload;
+				if (action.payload) state.currentWeatherID = action.payload.id;
 			})
 
 			.addCase(setCurrentWeatherID.fulfilled, (state, action) => {
