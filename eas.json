@@ -4,10 +4,16 @@
   },
   "build": {
     "development": {
+      "env": {
+        "EXPO_PUBLIC_OPEN_WEATHER_URL":"https://api.openweathermap.org/data/2.5"
+      },
       "developmentClient": true,
       "distribution": "internal"
     },
     "preview": {
+      "env": {
+        "EXPO_PUBLIC_OPEN_WEATHER_URL":"https://api.openweathermap.org/data/2.5"
+      },
       "distribution": "internal",
       "android": {
         "developmentClient": true,
@@ -18,7 +24,11 @@
         "simulator": true
       }
     },
-    "production": {}
+    "production": {
+      "env": {
+        "EXPO_PUBLIC_OPEN_WEATHER_URL":"https://api.openweathermap.org/data/2.5"
+      }
+    }
   },
   "submit": {
     "production": {}

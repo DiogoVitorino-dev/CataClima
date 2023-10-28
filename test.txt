@@ -1,0 +1,4 @@
+test color bg (SearchBar)
+test navigation permission modal
+icons weather item
+screenshots and videos

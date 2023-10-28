@@ -1,42 +1,26 @@
-import {MaterialIcons} from '@expo/vector-icons';
-import {Link} from 'expo-router';
-import {Pressable, StyleProp, TextStyle} from 'react-native';
+import { FontAwesome } from "@expo/vector-icons";
+import { Pressable, StyleProp, TextStyle } from "react-native";
 
-export function HeaderButton({
-	href,
-	params,
-	onPress,
-	icon,
-	iconSize,
-	iconColor,
-	style,
-}: {
-  href?: string;
-  params?: object;
-  onPress?:() => void;
-  iconSize: number;
-  icon: string | any;
-  iconColor: string;
+import { IconsFontAwesome } from "@/constants/TypesApp";
+
+interface IProps {
+  onPress: () => void;
+  icon: IconsFontAwesome;
+  color?: string;
   style?: StyleProp<TextStyle>;
-}) {
-	return (
-		<Link 
-			href={{pathname: href, params: params}} 
-			style={style} 
-			asChild
-		>
-			<Pressable 
-				accessibilityRole='button'
-				onPress={() => onPress ? onPress() : null}>
-				{({pressed}) => (
-					<MaterialIcons 
-						name={icon} 
-						size={iconSize} 
-						color={iconColor} 
-						style={{opacity: pressed ? 0.5 : 1}} 
-					/>
-				)}
-			</Pressable>
-		</Link>
-	);
+}
+
+export default function HeaderButton({ onPress, icon, color, style }: IProps) {
+  return (
+    <Pressable accessibilityRole="button" style={style} onPress={onPress}>
+      {({ pressed }) => (
+        <FontAwesome
+          name={icon}
+          size={30}
+          color={color}
+          style={{ opacity: pressed ? 0.5 : 1 }}
+        />
+      )}
+    </Pressable>
+  );
 }

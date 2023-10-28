@@ -1,7 +1,7 @@
 {
   "expo": {
     "name": "CataClima",
-    "slug": "cataclima",
+    "slug": "CataClima",
     "version": "1.0.0",
     "orientation": "portrait",
     "icon": "./src/assets/images/icon.png",
@@ -9,20 +9,14 @@
     "userInterfaceStyle": "automatic",
     "splash": {
       "image": "./src/assets/images/splash.png",
-      "resizeMode": "cover",
+      "resizeMode": "contain",
       "backgroundColor": "#ffffff"
     },
     "assetBundlePatterns": [
       "**/*"
     ],
     "ios": {
-      "supportsTablet": true,
-      "infoPlist": {
-        "UIBackgroundModes": [
-          "fetch"
-        ]
-      },
-      "bundleIdentifier": "CataClima"
+      "supportsTablet": true
     },
     "android": {
       "adaptiveIcon": {
@@ -34,30 +28,34 @@
         "android.permission.ACCESS_FINE_LOCATION",
         "android.permission.FOREGROUND_SERVICE"
       ],
-      "package": "com.diogovitorino_dev.cataclima"
+      "package": "com.diogovitorino_dev.CataClima"
     },
     "web": {
       "bundler": "metro",
-      "favicon": "./src/assets/images/favicon.png",
-      "output": "single"
+      "output": "static",
+      "favicon": "./src/assets/images/favicon.png"
     },
     "plugins": [
+      "expo-router",
       [
         "expo-location",
         {
           "locationAlwaysAndWhenInUsePermission": "Allow $(PRODUCT_NAME) to use your location."
         }
-      ]
+      ],
+      "expo-localization"
     ],
-    "extra": {
-      "eas": {
-        "projectId": "6a268a04-c1e6-4c8b-8125-ea4e0bb60e0f"
-      }
+    "experiments": {
+      "typedRoutes": true,
+      "tsconfigPaths": true
     },
-    "owner": "diogovitorino_dev",
-		"experiments": {
-      "tsconfigPaths": false
+    "extra": {
+      "router": {
+        "origin": false
+      },
+      "eas": {
+        "projectId": "4d15a1af-5bba-4d11-baed-1eaa71dc5c07"
+      }
     }
-
   }
 }

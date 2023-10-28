@@ -1,85 +1,89 @@
-import { Ionicons } from '@expo/vector-icons';
-import {StyleProp, StyleSheet, View, ViewStyle} from 'react-native';
-import {WeatherText as WeatherTempText} from './WeatherText';
+import { Feather } from "@expo/vector-icons";
+import { StyleProp, StyleSheet, View, ViewStyle } from "react-native";
 
-export function WeatherStatus({
-	iconName,  
-	temp,
-	tempMax,  
-	tempMin,
-	weatherDescription,
-	style,
-}: {
-  iconName: any;
-  temp: string;
-  tempMax: string;
-  tempMin: string;
-  weatherDescription: string;
+import WeatherTemperature from "./WeatherTemperature";
+import WeatherText from "./WeatherText";
+import Divider from "../shared/Divider";
+
+import Colors from "@/constants/Colors";
+import { useAppSelector } from "@/hooks/ReduxHooks";
+import { WeathersSelectors } from "@/store/weather/WeatherSelectors";
+
+interface IProps {
   style?: StyleProp<ViewStyle>;
-}) {
-	return (
-		<View style={[styles.container, style]}>
+}
 
-			<View>
-				<Ionicons name={iconName} size={150} color='#fff' />
-			</View>
+export default function WeatherStatus({ style }: IProps) {
+  const color = Colors["home"];
+  const weather = useAppSelector((state) =>
+    WeathersSelectors.selectPreference(state),
+  );
 
-			<View style={styles.containerTemperature}>
+  if (!weather) return <></>;
 
-				<View style={styles.temperature}>
-					<WeatherTempText text={temp} style={{fontSize:80}} />          
-				</View>
+  return (
+    <View style={[styles.container, style]}>
+      <Feather name={weather.data.icon} size={150} color={color.icon} />
 
-				<View style={styles.temperatureDetail}>
-					<WeatherTempText text={tempMax} style={{fontSize:26}} />
-					<View style={styles.separator} />
-					<WeatherTempText text={tempMin} style={{fontSize:26}} />
-				</View>
+      <View style={styles.containerTemperature}>
+        <WeatherTemperature
+          value={weather.temperature.value}
+          unit={`°${weather.temperature.unit}`}
+          textStyle={styles.temperature}
+        />
 
-			</View>
+        <View style={styles.temperatureDetail}>
+          <WeatherTemperature
+            value={weather.temperature.max}
+            unit={`°${weather.temperature.unit}`}
+            textStyle={styles.minMax}
+          />
 
-			<View>
-				<WeatherTempText 
-					text={weatherDescription} 
-					style={{fontSize:26,textTransform: 'capitalize'}} 
-				/>        
-			</View>
-      
-		</View>
-	);
+          <Divider color={color.borderColor} />
+
+          <WeatherTemperature
+            value={weather.temperature.min}
+            unit={`°${weather.temperature.unit}`}
+            textStyle={styles.minMax}
+          />
+        </View>
+      </View>
+
+      <WeatherText style={styles.description}>
+        {weather.data.description}
+      </WeatherText>
+    </View>
+  );
 }
 
 const styles = StyleSheet.create({
-	container: {
-		width: '100%',
-		maxWidth: 300,
-		flexDirection: 'column',
-		alignItems: 'center',
-	},
+  container: {
+    width: "100%",
+    maxWidth: 500,
+    flexDirection: "column",
+    alignItems: "center",
+  },
 
-	containerTemperature: {
-		width: '100%',
-		flexDirection: 'row',
-		justifyContent: 'center',
-		alignItems: 'center',
-	},
+  containerTemperature: {
+    flexDirection: "row",
+  },
 
-	temperature: {
-		marginHorizontal: 5,
-	},
+  temperatureDetail: {
+    marginHorizontal: 8,
+    flexDirection: "column",
+    justifyContent: "center",
+  },
 
-	temperatureDetail: {
-		maxWidth: 80,
-		marginHorizontal: 5,
-		flexDirection: 'column',
-		justifyContent: 'center',
-		alignItems: 'center',
-	},
+  temperature: {
+    fontSize: 76,
+  },
 
-	separator: {
-		height: 1,
-		marginVertical: 3,
-		width: '100%',
-		backgroundColor:'#ccc'
-	},
+  minMax: {
+    fontSize: 26,
+  },
+
+  description: {
+    fontSize: 28,
+    textTransform: "capitalize",
+  },
 });

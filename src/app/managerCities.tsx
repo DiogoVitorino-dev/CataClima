@@ -1,64 +1,95 @@
 import { ICity } from "country-state-city";
+import { useRouter } from "expo-router";
 import { useEffect, useState } from "react";
-import { StyleSheet, useColorScheme } from "react-native";
+import { StyleSheet } from "react-native";
 
-import { CitiesList } from "../components/managerCities";
-import { OpenTextStyled, Searchbar, View } from "../components/shared";
-import { CountryStateCities } from "../libs";
-import { useAppSelector } from "../store/hooks";
-import { selectAllWeathers } from "../store/weather/WeatherSelectors";
+import { ICoordsParams } from ".";
+
+import SearchList from "@/components/managerCities/SearchList";
+import UserList from "@/components/managerCities/UserList";
+import { CircularLoading } from "@/components/shared/CircularLoading";
+import SearchBar from "@/components/shared/SearchBar";
+import { View } from "@/components/shared/Themed";
+import Strings from "@/constants/Strings";
+import { useAppDispatch, useAppSelector } from "@/hooks/ReduxHooks";
+import IWeather from "@/models/WeatherModel";
+import { CitiesService } from "@/services/CitiesService";
+import { WeathersSelectors } from "@/store/weather/WeatherSelectors";
+import { WeatherThunks } from "@/store/weather/WeatherThunks";
 
 export default function ManagerCities() {
-	const colorScheme = useColorScheme();
-	const [searchText, setSearchText] = useState("");
-	const [searchResult, setSearchResult] = useState(Array<ICity>);
-	const allWeathers = useAppSelector(selectAllWeathers);
+  const [searchText, setSearchText] = useState("");
+  const [searchResult, setSearchResult] = useState(Array<ICity>);
+  const [loading, setLoading] = useState<boolean>(false);
+  const dispatch = useAppDispatch();
+  const router = useRouter();
 
-	const searchTextChanged = (newText: string) => setSearchText(newText);
+  const allWeathers = useAppSelector(WeathersSelectors.selectAll);
 
-	useEffect(() => {
-		if (searchText)
-			CountryStateCities()
-				.searchCities(searchText, allWeathers)
-				.then((result) => setSearchResult(result));
-		else setSearchResult([]);
-	}, [searchText]);
+  const searchTextChanged = (newText: string) => setSearchText(newText);
 
-	return (
-		<View style={styles.container}>
-			<OpenTextStyled style={[styles.title]}>Gerenciar cidades</OpenTextStyled>
+  useEffect(() => {
+    search();
+  }, [searchText]);
 
-			<View
-				style={styles.separator}
-				lightColor="#eee"
-				darkColor="rgba(255,255,255,0.1)"
-			/>
+  const search = async () => {
+    if (searchText) {
+      const result = await CitiesService.searchCitiesByName(searchText);
 
-			<Searchbar
-				placeholder="Inserir cidades"
-				backgroundColor={colorScheme === "light" ? "#FAFAFA" : "#333333"}
-				onChangeText={searchTextChanged}
-			/>
+      setSearchResult(result);
+    } else setSearchResult([]);
+  };
 
-			<CitiesList searchResultList={searchResult} />
-		</View>
-	);
+  const handleSelectedUserCity = (value: IWeather) => {
+    router.push({ pathname: "/", params: { id: value.id } });
+  };
+
+  const handleSelectedSearchCity = (value: ICity) => {
+    const { latitude, longitude } = value;
+    const coords: ICoordsParams = {
+      lat: latitude!,
+      lon: longitude!,
+    };
+    router.push({ pathname: "/", params: { ...coords } });
+  };
+
+  const handleRemovedCity = async (value: IWeather) => {
+    setLoading(true);
+    await dispatch(WeatherThunks.weatherRemoved(value.id)).unwrap();
+    setLoading(false);
+  };
+
+  return (
+    <View style={styles.container}>
+      <SearchBar
+        placeholder={Strings.placeholders.searchCities}
+        onChangeText={searchTextChanged}
+      />
+      <CircularLoading visible={loading} />
+      {!searchText && allWeathers.length > 0 ? (
+        <UserList
+          data={allWeathers}
+          onSelectedCity={handleSelectedUserCity}
+          onRemovedCity={handleRemovedCity}
+        />
+      ) : (
+        <SearchList
+          data={searchResult}
+          onSelectedCity={handleSelectedSearchCity}
+        />
+      )}
+    </View>
+  );
 }
-
 const styles = StyleSheet.create({
-	container: {
-		flex: 1,
-		flexDirection: "column",
-		alignItems: "center",
-		padding: 18,
-	},
-	title: {
-		fontSize: 26,
-		fontWeight: "bold",
-	},
-	separator: {
-		marginVertical: 18,
-		height: 1,
-		width: "80%",
-	},
+  container: {
+    flex: 1,
+    flexDirection: "column",
+    alignItems: "center",
+    paddingHorizontal: 18,
+  },
+  title: {
+    fontSize: 26,
+    fontWeight: "bold",
+  },
 });

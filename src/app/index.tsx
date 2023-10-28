@@ -1,359 +1,194 @@
-import { ICity } from "country-state-city";
-import { LinearGradient } from "expo-linear-gradient";
 import { useLocalSearchParams, useNavigation, useRouter } from "expo-router";
 import { StatusBar } from "expo-status-bar";
-import { useCallback, useEffect, useState } from "react";
-import {
-	StyleSheet,
-	ScrollView,
-	useColorScheme,
-	RefreshControl,
-} from "react-native";
+import { useEffect, useState } from "react";
+import { StyleSheet, ScrollView, RefreshControl } from "react-native";
+import { SafeAreaView } from "react-native-safe-area-context";
 
-import {
-	AnimatedBackground,
-	WeatherDetail,
-	WeatherItem,
-	WeatherNoData,
-	WeatherStatus,
-} from "../components/home";
-import {
-	HeaderButton,
-	Loading,
-	PermissionModal,
-	SimpleModal,
-	TimeAgo,
-	View,
-} from "../components/shared";
-import { Colors, CoordinatesProps, CustomTheme, Flags } from "../constants";
-import { useAppDispatch, useAppSelector } from "../store/hooks";
-import {
-	selectWeatherById,
-	selectWeatherRequestError,
-	selectWeatherRequestStatus,
-} from "../store/weather/WeatherSelectors";
-import { resetError, resetStatus } from "../store/weather/WeatherSlice";
-import {
-	addWeather,
-	retrieveWeathersFromDB,
-	getCurrentWeatherIDFromDB,
-	updateWeather,
-} from "../store/weather/WeatherThunks";
-import { DatetimeUtils } from "../utils";
-import { getMyLocation } from "../services/location";
+import HomeBackground from "@/components/home/HomeBackground";
+import TimeAgo from "@/components/home/TimeAgo";
+import WeatherDetail from "@/components/home/WeatherDetail";
+import WeatherNoData from "@/components/home/WeatherNoData";
+import WeatherStatus from "@/components/home/WeatherStatus";
+import HeaderButton from "@/components/shared/HeaderButton";
+import { Loading } from "@/components/shared/Loading";
+import NoConnection from "@/components/shared/NoConnection";
+import { View } from "@/components/shared/Themed";
+import Colors from "@/constants/Colors";
+import { useAppDispatch, useAppSelector } from "@/hooks/ReduxHooks";
+import { ICoordinates } from "@/models/WeatherModel";
+import { WeathersSelectors } from "@/store/weather/WeatherSelectors";
+import { WeatherThunks } from "@/store/weather/WeatherThunks";
+
+export interface ICoordsParams {
+  lat: string;
+  lon: string;
+  [key: string]: string;
+}
+
+export type THomeSearchParams = {
+  id?: string;
+} & ICoordsParams;
 
 export default function Home() {
-	const colorScheme = useColorScheme();
-	const router = useRouter();
-	const navigation = useNavigation();
+  const navigation = useNavigation();
+  const router = useRouter();
+  const dispatch = useAppDispatch();
+  const color = Colors["home"];
 
-	const { weatherSelectedID, searchedCity } = useLocalSearchParams();
+  const [loading, setLoading] = useState(false);
 
-	const dispatch = useAppDispatch();
-	const weather = useAppSelector((state) =>
-		selectWeatherById(state, state.weathers.currentWeatherID),
-	);
+  const { id, lat, lon } = useLocalSearchParams<THomeSearchParams>();
 
-	const weatherRequestStatus = useAppSelector(selectWeatherRequestStatus);
-	const weatherRequestError = useAppSelector(selectWeatherRequestError);
+  const weather = useAppSelector((state) =>
+    WeathersSelectors.selectPreference(state),
+  );
 
-	const [isLoading, setLoadingState] = useState(false);
+  const allWeather = useAppSelector(WeathersSelectors.selectAll);
 
-	const [permissionModalVisible, setPermissionModalVisible] = useState(false);
-	const [NoConnectionModalVisible, setNoConnectionModalVisible] =
-		useState(false);
+  const status = useAppSelector(WeathersSelectors.selectStatus);
 
-	const [backgroundGradient, setBackgroundGradient] = useState([
-		Colors[colorScheme ?? "light"].background,
-		Colors[colorScheme ?? "light"].background,
-	]);
+  useEffect(() => {
+    updateHeaderTitle();
+    addHeaderButtons();
+  }, [weather, navigation]);
 
-	// Hooks
-	useEffect(() => {
-		if (!weather && weatherRequestStatus === "idle")
-			checkDatabase().then((saved) => {
-				saved || getMyLocationWeather();
-			});
-	}, []);
+  useEffect(() => {
+    switch (status) {
+      case "pending":
+        setLoading(true);
+        break;
 
-	useEffect(() => {
-		if (weather) {
-			setBackgroundGradient(handleBackgroundGradient());
+      default:
+        setLoading(false);
+    }
+  }, [status]);
 
-			navigation.setOptions({
-				headerTitle: weather.location.city,
+  useEffect(() => {
+    if (id) {
+      dispatch(WeatherThunks.setWeatherPreference(id));
+    } else if (lat && lon) {
+      const coords: ICoordinates = {
+        latitude: Number(lat),
+        longitude: Number(lon),
+      };
+      const isFound = isAlreadySaved(coords);
 
-				headerLeft: () =>
-					HeaderButton({
-						href: "/managerCities",
-						icon: "add",
-						iconColor: "#fff",
-						iconSize: 30,
-						style: { marginLeft: 10 },
-					}),
+      if (!isFound) {
+        handleAddWeather(coords);
+      } else {
+        dispatch(WeatherThunks.setWeatherPreference(isFound.id));
+      }
+    }
+  }, [lat, lon, id]);
 
-				headerRight: () =>
-					HeaderButton({
-						onPress: handleUpdateWeather,
-						icon: "refresh",
-						iconColor: "#fff",
-						iconSize: 30,
-						style: { marginRight: 10 },
-					}),
-			});
-		}
-	}, [weather]);
+  const isAlreadySaved = (coords: ICoordinates) => {
+    return allWeather.find(
+      (value) =>
+        value.coords.latitude === coords.latitude &&
+        value.coords.longitude === coords.longitude,
+    );
+  };
 
-	useEffect(() => {
-		switch (weatherRequestStatus) {
-			case "pending":
-				setLoadingState(true);
-				break;
+  const updateHeaderTitle = () => {
+    navigation.setOptions({
+      headerTitle: weather?.location.city || "",
+      headerTitleStyle: { color: color.text },
+    });
+  };
 
-			case "failed":
-			case "success": {
-				setLoadingState(false);
-				break;
-			}
-		}
-	}, [weatherRequestStatus]);
+  const addHeaderButtons = () => {
+    navigation.setOptions({
+      headerLeft: () =>
+        HeaderButton({
+          icon: "plus",
+          color: color.icon,
+          onPress: navigate.toManagerCities,
+          style: styles.headerButton,
+        }),
 
-	useEffect(() => {
-		if (weatherRequestError) {
-			switch (weatherRequestError) {
-				case Flags.errors.NOCONNECTION:
-					setNoConnectionModalVisible(true);
-					break;
+      headerRight: () =>
+        HeaderButton({
+          icon: "refresh",
+          color: color.icon,
+          onPress: handleUpdateWeather,
+          style: styles.headerButton,
+        }),
+    });
+  };
 
-				default:
-					console.error(weatherRequestError.message);
-			}
-			dispatch(resetError);
-		}
-	}, [weatherRequestError]);
+  const navigate = {
+    toManagerCities: () => {
+      router.push("/managerCities");
+    },
+    toPermissionModal: () => {
+      router.push("/permissionModal");
+    },
+  };
 
-	/*useEffect(() => {
-		if (weatherSelectedID && typeof weatherSelectedID === "string")
-			dispatch(setCurrentWeatherID(weatherSelectedID));
-		else if (searchedCity && typeof searchedCity === "string") {
-			const { latitude, longitude } = JSON.parse(searchedCity.trim()) as ICity;
+  const handleAddWeather = (coords: ICoordinates) => {
+    dispatch(WeatherThunks.weatherAdded(coords));
+  };
 
-			if (latitude && longitude) dispatch(addWeather({ latitude, longitude }));
-		}
-	}, [weatherSelectedID, searchedCity]);*/
+  const handleUpdateWeather = () => {
+    if (weather) dispatch(WeatherThunks.weatherUpdated(weather));
+  };
 
-	// check
+  return (
+    <HomeBackground>
+      <SafeAreaView style={{ flex: 1 }} mode="padding">
+        <StatusBar translucent style="light" />
+        <ScrollView
+          contentContainerStyle={{ flex: 1 }}
+          refreshControl={
+            <RefreshControl
+              progressViewOffset={50}
+              refreshing={loading}
+              onRefresh={handleUpdateWeather}
+            />
+          }
+        >
+          {loading ? (
+            <Loading />
+          ) : weather ? (
+            <>
+              <View style={[styles.container, styles.detail]}>
+                <TimeAgo date={weather.data.timestamp} />
 
-	const checkDatabase = async () => {
-		const saved = await dispatch(retrieveWeathersFromDB()).unwrap();
-		if (saved.length > 0) {
-			await dispatch(getCurrentWeatherIDFromDB()).unwrap();
-			return true;
-		}
-
-		return false;
-	};
-
-	// Query weather
-	const getMyLocationCoords = async () => {
-		try {
-			return (await getMyLocation());
-		} catch (error: any) {
-			if (
-				error.message === Flags.errors.LOCATION_PERMISSION_DENIED ||
-				error.code === 1
-			)
-				setPermissionModalVisible(true);
-		}
-	};
-
-	const getMyLocationWeather = async () => {
-		try {
-			const coords = await getMyLocationCoords();
-
-			if (coords) {
-				await dispatch(addWeather(coords)).unwrap();
-			}
-		} catch (error: any) {
-			if (error.message === Flags.errors.NOCONNECTION)
-				setNoConnectionModalVisible(true);
-		} finally {
-			dispatch(resetStatus);
-		}
-	};
-
-	const handleUpdateWeather = async () => {
-		try {
-			if (weather) await dispatch(updateWeather(weather)).unwrap();
-		} finally {
-			dispatch(resetStatus);
-		}
-	};
-
-	// Theme control
-	const handleBackgroundGradient = () => {
-		if (weather)
-			switch (weather.data.current) {
-				case Flags.WeatherApiState.SUNNY: {
-					if (DatetimeUtils().isNight(weather.data.timeStamp.toString()))
-						return CustomTheme.gradient.night;
-					else return CustomTheme.gradient.sunny;
-				}
-				case Flags.WeatherApiState.CLOUDY:
-					return CustomTheme.gradient.cloudy;
-				case Flags.WeatherApiState.SNOW:
-				case Flags.WeatherApiState.RAINY:
-					return CustomTheme.gradient.rainy;
-			}
-
-		return [
-			Colors[colorScheme ?? "light"].background,
-			Colors[colorScheme ?? "light"].background,
-		];
-	};
-
-	const handleIcon = () => {
-		return "sunny";
-	};
-
-	// Navigation
-	const gotoManagerCities = () => router.push({ pathname: "/managerCities" });
-
-	// Modals
-	const ClosePermissionModal = () => setPermissionModalVisible(false);
-
-	const CloseNoConnectionModal = () => setNoConnectionModalVisible(false);
-
-	const PermissionModalJSX = useCallback(
-		() => (
-			<PermissionModal
-				visible={permissionModalVisible}
-				onPressFirstButton={getMyLocationWeather}
-				onPressSecondButton={gotoManagerCities}
-				onDismiss={ClosePermissionModal}
-			/>
-		),
-		[permissionModalVisible],
-	);
-
-	const NoConnectionModalJSX = useCallback(
-		() => (
-			<SimpleModal
-				message="Sem conexão com a internet !"
-				visible={NoConnectionModalVisible}
-				onDismiss={CloseNoConnectionModal}
-			/>
-		),
-		[NoConnectionModalVisible],
-	);
-
-	// Viewers
-	if (weather || isLoading) {
-		return (
-			<LinearGradient
-				colors={backgroundGradient}
-				start={{ x: 0, y: 0 }}
-				end={{ x: 0.5, y: 1 }}
-				style={{ flex: 1 }}
-			>
-				<ScrollView
-					contentContainerStyle={{ flex: 1 }}
-					refreshControl={
-						<RefreshControl
-							progressViewOffset={50}
-							refreshing={isLoading}
-							onRefresh={() => handleUpdateWeather()}
-						/>
-					}
-				>
-					{!isLoading && weather ? (
-						<View
-							style={[
-								styles.container,
-								{ flex: 1, backgroundColor: "transparent" },
-							]}
-						>
-							<TimeAgo dateIsoFormat={weather.data.timeStamp.toString()} />
-
-							<WeatherStatus
-								iconName={handleIcon()}
-								temp={weather.temperature.value + "°"}
-								tempMax={weather.temperature.max + "°"}
-								tempMin={weather.temperature.min + "°"}
-								weatherDescription={weather.data.description}
-							/>
-
-							<WeatherDetail
-								dayOfWeek={DatetimeUtils().getDayOfWeek(new Date().toString())}
-							>
-								<WeatherItem
-									iconName="sun-thermometer-outline"
-									iconSize={30}
-									label="Sensação"
-									value={`${weather.temperature.feelsLike}°${weather.temperature.unit}`}
-								/>
-								<WeatherItem
-									iconName="water-percent"
-									iconSize={30}
-									label="Umidade"
-									value={`${weather.humidity.value} ${weather.humidity.unit}`}
-								/>
-								<WeatherItem
-									iconName="weather-windy"
-									iconSize={30}
-									label="Vento"
-									value={`${weather.wind.value} ${weather.wind.unit}`}
-								/>
-								<WeatherItem
-									iconName="thermostat-box"
-									iconSize={30}
-									label="Pressão"
-									value={`${weather.pressure.value} ${weather.pressure.unit}`}
-								/>
-							</WeatherDetail>
-							<AnimatedBackground />
-						</View>
-					) : (
-						<Loading />
-					)}
-
-					{PermissionModalJSX()}
-					{NoConnectionModalJSX()}
-				</ScrollView>
-				<StatusBar style="light" />
-			</LinearGradient>
-		);
-	} else {
-		return (
-			<WeatherNoData
-				onPressMyLocationWeather={getMyLocationWeather}
-				onPressNavigate={gotoManagerCities}
-			>
-				{PermissionModalJSX()}
-				{NoConnectionModalJSX()}
-				<StatusBar style="auto" />
-			</WeatherNoData>
-		);
-	}
+                <WeatherStatus />
+                <WeatherDetail />
+              </View>
+              <NoConnection />
+            </>
+          ) : (
+            <WeatherNoData />
+          )}
+        </ScrollView>
+      </SafeAreaView>
+    </HomeBackground>
+  );
 }
 
 const styles = StyleSheet.create({
-	container: {
-		flex: 1,
-		alignItems: "center",
-		justifyContent: "space-between",
-		flexDirection: "column",
-		paddingTop: 80,
-	},
+  container: {
+    flex: 1,
+    alignItems: "center",
+    justifyContent: "space-between",
+    flexDirection: "column",
+    marginTop: 80,
+  },
 
-	centeredView: {
-		flex: 1,
-		justifyContent: "center",
-		alignItems: "center",
-	},
+  detail: { flex: 1, backgroundColor: "transparent" },
 
-	noDataText: {
-		fontSize: 18,
-		textAlign: "center",
-	},
+  headerButton: { marginHorizontal: 10 },
+
+  centeredView: {
+    flex: 1,
+    justifyContent: "center",
+    alignItems: "center",
+  },
+
+  noDataText: {
+    fontSize: 18,
+    textAlign: "center",
+  },
 });

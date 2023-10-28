@@ -1,130 +1,129 @@
 import {
-	SerializedError,
-	createEntityAdapter,
-	createSlice,
-	isFulfilled,
-	isPending,
-	isRejected,
+  SerializedError,
+  createEntityAdapter,
+  createSlice,
+  isFulfilled,
+  isPending,
+  isRejected,
 } from "@reduxjs/toolkit";
 
-import {
-	addWeather,
-	updateWeather,
-	getCurrentWeatherIDFromDB,
-	retrieveWeathersFromDB,
-	setCurrentWeatherID,
-	weatherRemoved,
-} from "./WeatherThunks";
-import IWeather from "../../models/WeatherModel";
+import { WeatherThunks } from "./WeatherThunks";
 import { RootState } from "../store";
 
-export interface WeatherStateProps {
-	currentWeatherID: string;
-	statusRequest: "idle" | "pending" | "success" | "failed";
-	error: null | SerializedError;
+import IWeather from "@/models/WeatherModel";
+
+export interface IStateWeathers {
+  idPreference?: string;
+  statusRequest: "idle" | "pending" | "success" | "failed";
+  error: null | SerializedError;
 }
 
 const weatherAdapter = createEntityAdapter<IWeather>({
-	sortComparer: (a, b) => {
-		if (a.location.city > b.location.city) return 1;
-		if (a.location.city < b.location.city) return -1;
-		return 0;
-	},
+  sortComparer: (a, b) => {
+    if (a.location.city > b.location.city) return 1;
+    if (a.location.city < b.location.city) return -1;
+    return 0;
+  },
 });
 
-const initialState = weatherAdapter.getInitialState({
-	currentWeatherID: "",
-	statusRequest: "idle",
-	error: null,
-} as WeatherStateProps);
+const initialState = weatherAdapter.getInitialState<IStateWeathers>({
+  statusRequest: "idle",
+  error: null,
+});
+
+const {
+  getWeatherPreference,
+  getWeathers,
+  setWeatherPreference,
+  weatherAdded,
+  weatherRemoved,
+  weatherUpdated,
+} = WeatherThunks;
 
 const genericIsPending = isPending(
-	addWeather,
-	updateWeather,
-	weatherRemoved,
-	retrieveWeathersFromDB,
-	setCurrentWeatherID,
-	getCurrentWeatherIDFromDB,
+  weatherAdded,
+  weatherUpdated,
+  weatherRemoved,
+  getWeathers,
+  getWeatherPreference,
+  setWeatherPreference,
 );
 
 const genericIsFulfilled = isFulfilled(
-	addWeather,
-	updateWeather,
-	weatherRemoved,
-	retrieveWeathersFromDB,
-	setCurrentWeatherID,
-	getCurrentWeatherIDFromDB,
+  weatherAdded,
+  weatherUpdated,
+  weatherRemoved,
+  getWeathers,
+  getWeatherPreference,
+  setWeatherPreference,
 );
 
 const genericIsRejected = isRejected(
-	addWeather,
-	updateWeather,
-	weatherRemoved,
-	retrieveWeathersFromDB,
-	setCurrentWeatherID,
-	getCurrentWeatherIDFromDB,
+  weatherAdded,
+  weatherUpdated,
+  weatherRemoved,
+  getWeathers,
+  getWeatherPreference,
+  setWeatherPreference,
 );
 
+const setIdPreference = isFulfilled(getWeatherPreference, setWeatherPreference);
+
 const weathersSlice = createSlice({
-	name: "weathers",
-	initialState,
-	reducers: {
-		resetStatus: (state) => {
-			state.statusRequest = "idle";
-		},
+  name: "weathers",
+  initialState,
+  reducers: {
+    resetStatus: (state) => {
+      state.statusRequest = "idle";
+    },
 
-		resetError: (state) => {
-			state.error = null;
-		},
-	},
-	extraReducers(builder) {
-		builder
-			.addCase(updateWeather.fulfilled, (state, action) => {
-				weatherAdapter.upsertOne(state, action.payload);
-			})
+    resetError: (state) => {
+      state.error = null;
+    },
+  },
+  extraReducers(builder) {
+    builder
+      .addCase(weatherUpdated.fulfilled, (state, action) => {
+        weatherAdapter.upsertOne(state, action.payload);
+      })
 
-			.addCase(addWeather.fulfilled, (state, action) => {
-				weatherAdapter.upsertOne(state, action.payload);
-				console.log(action.payload);
+      .addCase(weatherAdded.fulfilled, (state, action) => {
+        weatherAdapter.upsertOne(state, action.payload);
 
-				state.currentWeatherID = action.payload.id;
-			})
+        state.idPreference = action.payload.id;
+      })
 
-			.addCase(weatherRemoved.fulfilled, (state, action) => {
-				weatherAdapter.removeOne(state, action.payload);
-			})
+      .addCase(weatherRemoved.fulfilled, (state, action) => {
+        weatherAdapter.removeOne(state, action.payload);
+      })
 
-			.addCase(retrieveWeathersFromDB.fulfilled, (state, action) => {
-				weatherAdapter.setAll(state, action.payload);
-			})
+      .addCase(getWeathers.fulfilled, (state, action) => {
+        weatherAdapter.setAll(state, action.payload);
+      })
 
-			.addCase(getCurrentWeatherIDFromDB.fulfilled, (state, action) => {
-				if (action.payload) state.currentWeatherID = action.payload.id;
-			})
+      .addMatcher(setIdPreference, (state, action) => {
+        if (action.payload) state.idPreference = action.payload;
+      })
 
-			.addCase(setCurrentWeatherID.fulfilled, (state, action) => {
-				state.currentWeatherID = action.payload;
-			})
+      .addMatcher(genericIsFulfilled, (state) => {
+        state.statusRequest = "success";
+      })
 
-			.addMatcher(genericIsFulfilled, (state) => {
-				state.statusRequest = "success";
-			})
+      .addMatcher(genericIsPending, (state) => {
+        state.statusRequest = "pending";
+      })
 
-			.addMatcher(genericIsPending, (state) => {
-				state.statusRequest = "pending";
-			})
-
-			.addMatcher(genericIsRejected, (state, action) => {
-				state.statusRequest = "failed";
-				state.error = action.error;
-			});
-	},
+      .addMatcher(genericIsRejected, (state, action) => {
+        state.statusRequest = "failed";
+        state.error = action.error;
+      });
+  },
 });
 
 export const { resetStatus, resetError } = weathersSlice.actions;
 
 export const entitySelectors = weatherAdapter.getSelectors<RootState>(
-	(state) => state.weathers,
+  (state) => state.weathers,
 );
 
 export default weathersSlice.reducer;
