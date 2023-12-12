@@ -9,6 +9,7 @@ import { OpenWeatherCurrentResponse } from "@/models/openWeather/OpenWeatherCurr
 import { OpenWeatherForecastResponse } from "@/models/openWeather/OpenWeatherForecastResponse";
 import { CitiesService } from "@/services/CitiesService";
 import { ConversionService } from "@/services/ConversionService";
+import { DateTimeService } from "@/services/DateTimeService";
 
 // WeatherFetch
 const getWeatherData = async (coords: ICoordinates, id = "") => {
@@ -31,6 +32,9 @@ const getWeatherData = async (coords: ICoordinates, id = "") => {
 
     const { getWeatherTheme, toLowerCase, toFixed } = ConversionService;
 
+    const timestamp = fromUnixTime(weatherData.dt).toISOString();
+    const sunset = fromUnixTime(weatherData.sys.sunset).toISOString();
+
     const newWeather: IWeather = {
       id,
       coords: {
@@ -40,10 +44,13 @@ const getWeatherData = async (coords: ICoordinates, id = "") => {
       data: {
         current: toLowerCase(weatherData.weather[0].main),
         description: weatherData.weather[0].description,
-        timestamp: fromUnixTime(weatherData.dt).toISOString(),
-        icon: getWeatherTheme(toLowerCase(weatherData.weather[0].main)).icon,
+        icon: getWeatherTheme(
+          toLowerCase(weatherData.weather[0].main),
+          DateTimeService.isNight(timestamp, sunset),
+        ).icon,
         sunrise: fromUnixTime(weatherData.sys.sunrise).toISOString(),
-        sunset: fromUnixTime(weatherData.sys.sunset).toISOString(),
+        sunset,
+        timestamp,
       },
       humidity: {
         value: toFixed(weatherData.main.humidity),

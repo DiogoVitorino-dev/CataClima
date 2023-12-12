@@ -24,16 +24,11 @@ export default function HomeBackground({ children }: IProps) {
 
   const handleGradient = () => {
     if (weather) {
-      if (
-        DateTimeService.isNight(weather.data.timestamp, weather.data.sunset)
-      ) {
-        setGradient(Colors.gradient["night"]);
-      } else {
-        const { gradient } = ConversionService.getWeatherTheme(
-          weather.data.current,
-        );
-        setGradient(Colors.gradient[gradient]);
-      }
+      const { gradient } = ConversionService.getWeatherTheme(
+        weather.data.current,
+        DateTimeService.isNight(weather.data.timestamp, weather.data.sunset),
+      );
+      setGradient(Colors.gradient[gradient]);
     }
   };
 

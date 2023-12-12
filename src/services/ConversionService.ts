@@ -15,7 +15,10 @@ interface IWeatherTheme {
   gradient: keyof typeof Colors.gradient;
 }
 
-const getWeatherTheme = (main: TConditions): IWeatherTheme => {
+const getWeatherTheme = (
+  main: TConditions,
+  isNight?: boolean,
+): IWeatherTheme => {
   switch (main) {
     case "fog":
     case "clouds":
@@ -27,6 +30,13 @@ const getWeatherTheme = (main: TConditions): IWeatherTheme => {
       };
 
     case "clear":
+      if (isNight) {
+        return {
+          icon: "moon",
+          gradient: "night",
+        };
+      }
+
       return {
         icon: "sun",
         gradient: "sunny",
@@ -49,7 +59,7 @@ const getWeatherTheme = (main: TConditions): IWeatherTheme => {
     case "snow":
       return {
         icon: "cloud-snow",
-        gradient: "snow",
+        gradient: "snowy",
       };
 
     case "dust":
@@ -57,7 +67,7 @@ const getWeatherTheme = (main: TConditions): IWeatherTheme => {
     case "sand":
       return {
         icon: "rewind",
-        gradient: "dust",
+        gradient: "dusty",
       };
 
     case "smoke":
