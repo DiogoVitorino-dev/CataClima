@@ -1,5 +1,3 @@
-import { TConditions } from "./openWeather/OpenWeatherCurrentResponse";
-
 import { IconsFeather } from "@/constants/TypesApp";
 
 export default interface IWeather {
@@ -14,12 +12,11 @@ export default interface IWeather {
 }
 
 export interface IWeatherData {
-  current: TConditions;
+  current: EConditions;
   description: string;
   icon: IconsFeather;
+  isNight: boolean;
   timestamp: string;
-  sunrise: string;
-  sunset: string;
 }
 
 export interface ICoordinates {
@@ -40,8 +37,6 @@ export interface IMeasurable {
 
 export interface ITemperature extends IMeasurable {
   feelsLike: number;
-  min: number;
-  max: number;
 }
 
 export interface IPressure extends IMeasurable {}
@@ -49,3 +44,12 @@ export interface IPressure extends IMeasurable {}
 export interface IHumidity extends IMeasurable {}
 
 export interface IWind extends IMeasurable {}
+
+export enum EConditions {
+  NONE = "NONE",
+  CLEAR = "CLEAR",
+  RAINY = "RAINY",
+  STORMY = "STORMY",
+  CLOUDY = "CLOUDY",
+  SNOWY = "SNOWY",
+}

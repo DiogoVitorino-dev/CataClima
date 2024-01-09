@@ -26,7 +26,7 @@ export default function HomeBackground({ children }: IProps) {
     if (weather) {
       const { gradient } = ConversionService.getWeatherTheme(
         weather.data.current,
-        DateTimeService.isNight(weather.data.timestamp, weather.data.sunset),
+        weather.data.isNight,
       );
       setGradient(Colors.gradient[gradient]);
     }

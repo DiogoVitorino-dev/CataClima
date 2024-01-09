@@ -160,7 +160,10 @@ export default function Home() {
               <NoConnection />
             </>
           ) : (
-            <WeatherNoData />
+            <>
+              <WeatherNoData />
+              <StatusBar translucent style="light" />
+            </>
           )}
         </ScrollView>
       </SafeAreaView>

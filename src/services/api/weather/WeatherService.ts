@@ -1,79 +1,62 @@
 import NetInfo from "@react-native-community/netinfo";
-import { fromUnixTime } from "date-fns";
 
 import WeatherAxios from "./AxiosConfig";
 
 import { EFlags } from "@/constants/EnumApp";
 import IWeather, { ICoordinates } from "@/models/WeatherModel";
-import { OpenWeatherCurrentResponse } from "@/models/openWeather/OpenWeatherCurrentResponse";
-import { OpenWeatherForecastResponse } from "@/models/openWeather/OpenWeatherForecastResponse";
-import { CitiesService } from "@/services/CitiesService";
+import { WeatherApiResponse } from "@/models/weatherApi/WeatherApiResponse";
 import { ConversionService } from "@/services/ConversionService";
-import { DateTimeService } from "@/services/DateTimeService";
 
 // WeatherFetch
 const getWeatherData = async (coords: ICoordinates, id = "") => {
   const { isConnected } = await NetInfo.fetch();
+
   if (isConnected) {
     const customAxios = new WeatherAxios().instance;
 
-    const currentWeather = await customAxios.get<OpenWeatherCurrentResponse>(
-      `/weather?lat=${coords.latitude}&lon=${coords.longitude}`,
+    const currentWeather = await customAxios.get<WeatherApiResponse>(
+      `/current.json?q=${coords.latitude},${coords.longitude}&aqi=no`,
     );
 
-    const forecastWeather = await customAxios.get<OpenWeatherForecastResponse>(
-      `/forecast?lat=${coords.latitude}&lon=${coords.longitude}`,
-    );
+    const { current, location } = currentWeather.data;
 
-    const weatherData = currentWeather.data;
-    const forecastData = forecastWeather.data;
+    const { getWeatherTheme, toConditionsApp, toFixed } = ConversionService;
 
-    const locationInfo = await CitiesService.findCityByCoords(coords);
-
-    const { getWeatherTheme, toLowerCase, toFixed } = ConversionService;
-
-    const timestamp = fromUnixTime(weatherData.dt).toISOString();
-    const sunset = fromUnixTime(weatherData.sys.sunset).toISOString();
+    const conditionApp = toConditionsApp(current.condition.code);
 
     const newWeather: IWeather = {
       id,
       coords: {
-        latitude: weatherData.coord.lat,
-        longitude: weatherData.coord.lon,
+        latitude: location.lat,
+        longitude: location.lon,
       },
       data: {
-        current: toLowerCase(weatherData.weather[0].main),
-        description: weatherData.weather[0].description,
-        icon: getWeatherTheme(
-          toLowerCase(weatherData.weather[0].main),
-          DateTimeService.isNight(timestamp, sunset),
-        ).icon,
-        sunrise: fromUnixTime(weatherData.sys.sunrise).toISOString(),
-        sunset,
-        timestamp,
+        current: conditionApp,
+        description: current.condition.text,
+        icon: getWeatherTheme(conditionApp, current.is_day === 0).icon,
+        isNight: current.is_day === 0,
+        timestamp: new Date(location.localtime).toISOString(),
       },
       humidity: {
-        value: toFixed(weatherData.main.humidity),
+        value: toFixed(current.humidity),
         unit: "%",
       },
       wind: {
-        value: toFixed(weatherData.wind.speed * 3.6),
+        value: toFixed(current.wind_kph),
         unit: "km/h",
       },
       location: {
-        city: weatherData.name,
-        state: locationInfo.stateCode,
-        country: weatherData.sys.country,
+        city: location.name,
+        state: location.region,
+        country: location.country,
       },
       pressure: {
-        value: weatherData.main.pressure,
+        value: current.pressure_mb,
         unit: "mBar",
       },
       temperature: {
-        value: toFixed(weatherData.main.temp, 0),
-        feelsLike: toFixed(forecastData.list[0].main.feels_like, 0),
-        max: toFixed(forecastData.list[0].main.temp_max, 0),
-        min: toFixed(forecastData.list[0].main.temp_min, 0),
+        value: toFixed(current.temp_c, 0),
+        feelsLike: toFixed(current.feelslike_c, 0),
         unit: "c",
       },
     };

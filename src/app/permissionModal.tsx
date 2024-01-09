@@ -5,8 +5,10 @@ import { StyleSheet, Platform } from "react-native";
 import { ICoordsParams } from ".";
 
 import Button from "@/components/shared/Button";
+import IconButton from "@/components/shared/IconButton";
 import { Text, View } from "@/components/shared/Themed";
 import Strings from "@/constants/Strings";
+import { ICoordinates } from "@/models/WeatherModel";
 import { LocationService } from "@/services/LocationService";
 
 const AdviceWeb = () => (
@@ -20,12 +22,15 @@ export default function PermissionModal() {
 
   const handleUseMyLocation = async () => {
     const { latitude, longitude } = await LocationService.getMyLocation();
-    const coords: ICoordsParams = {
+
+    goHome({
       lat: latitude.toString(),
       lon: longitude.toString(),
-    };
+    });
+  };
 
-    router.replace({
+  const goHome = (coords?: ICoordsParams) => {
+    router.push({
       pathname: "/",
       params: { ...coords },
     });
@@ -41,12 +46,19 @@ export default function PermissionModal() {
         </Text>
         {Platform.OS === "web" ? AdviceWeb() : null}
         <Button
+          style={styles.button}
           label={Strings.options.useMyLocation}
           onPress={handleUseMyLocation}
         />
         <Button
+          style={styles.button}
           label={Strings.options.alternativeOption}
           onPress={handleAlternativeOption}
+        />
+        <IconButton
+          style={styles.close}
+          icon="close"
+          onPress={() => goHome()}
         />
       </View>
     </View>
@@ -58,8 +70,10 @@ const styles = StyleSheet.create({
     flex: 1,
     justifyContent: "center",
     alignItems: "center",
+    backgroundColor: "rgba(0,0,0,0.6)",
   },
   modalView: {
+    maxWidth: 600,
     margin: 20,
     borderRadius: 20,
     padding: 35,
@@ -74,10 +88,13 @@ const styles = StyleSheet.create({
     elevation: 5,
   },
   button: {
-    borderRadius: 20,
-    padding: 10,
     marginVertical: 5,
-    elevation: 2,
+  },
+
+  close: {
+    position: "absolute",
+    right: 10,
+    top: 10,
   },
 
   modalText: {

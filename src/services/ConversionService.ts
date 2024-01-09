@@ -1,6 +1,7 @@
 import Colors from "@/constants/Colors";
 import { IconsFeather } from "@/constants/TypesApp";
-import { TConditions } from "@/models/openWeather/OpenWeatherCurrentResponse";
+import { EConditions } from "@/models/WeatherModel";
+import WeatherApiConditions from "@/models/weatherApi/WeatherApiConditions";
 
 function toLowerCase<Type>(value: string): Type {
   return value.toLowerCase() as Type;
@@ -10,26 +11,61 @@ function toFixed(value: number, fractionDigits = 1): number {
   return parseFloat(value.toFixed(fractionDigits));
 }
 
+function toConditionsApp(value: any): EConditions {
+  const message = WeatherApiConditions.find(
+    (condition) => condition.code === value,
+  )?.day.toLowerCase();
+
+  if (!message) {
+    return EConditions.NONE;
+  }
+
+  const rain = /rain|drizzle|sleet/;
+  const storm = /thundery|heavy rain|heavy sleet|torrential rain/;
+  const cloud = /cloudy|overcast|mist|fog/;
+  const clear = /sunny/;
+  const snow = /snow|sleet|blizzard|ice/;
+
+  if (storm.test(message)) {
+    return EConditions.STORMY;
+  }
+
+  if (rain.test(message)) {
+    return EConditions.RAINY;
+  }
+
+  if (cloud.test(message)) {
+    return EConditions.CLOUDY;
+  }
+
+  if (clear.test(message)) {
+    return EConditions.CLEAR;
+  }
+
+  if (snow.test(message)) {
+    return EConditions.SNOWY;
+  }
+
+  return EConditions.NONE;
+}
+
 interface IWeatherTheme {
   icon: IconsFeather;
   gradient: keyof typeof Colors.gradient;
 }
 
 const getWeatherTheme = (
-  main: TConditions,
+  condition: EConditions,
   isNight?: boolean,
 ): IWeatherTheme => {
-  switch (main) {
-    case "fog":
-    case "clouds":
-    case "mist":
-    case "squall":
+  switch (condition) {
+    case EConditions.STORMY:
       return {
-        icon: "cloud",
-        gradient: "cloudy",
+        icon: "cloud-rain",
+        gradient: "stormy",
       };
 
-    case "clear":
+    case EConditions.CLEAR:
       if (isNight) {
         return {
           icon: "moon",
@@ -42,40 +78,23 @@ const getWeatherTheme = (
         gradient: "sunny",
       };
 
-    case "rain":
-    case "drizzle":
+    case EConditions.RAINY:
       return {
         icon: "cloud-drizzle",
         gradient: "rainy",
       };
 
-    case "thunderstorm":
-    case "tornado":
-      return {
-        icon: "cloud-rain",
-        gradient: "rainy",
-      };
-
-    case "snow":
+    case EConditions.SNOWY:
       return {
         icon: "cloud-snow",
         gradient: "snowy",
       };
 
-    case "dust":
-    case "haze":
-    case "sand":
+    case EConditions.CLOUDY:
       return {
-        icon: "rewind",
-        gradient: "dusty",
+        icon: "cloud",
+        gradient: "cloudy",
       };
-
-    case "smoke":
-      return {
-        icon: "flag",
-        gradient: "fire",
-      };
-
     default:
       return {
         icon: "cloud-off",
@@ -87,5 +106,6 @@ const getWeatherTheme = (
 export const ConversionService = {
   toLowerCase,
   getWeatherTheme,
+  toConditionsApp,
   toFixed,
 };

@@ -1,10 +1,4 @@
-import {
-  StyleSheet,
-  TextStyle,
-  View,
-  StyleProp,
-  ViewStyle,
-} from "react-native";
+import { StyleSheet, TextStyle, View, ViewStyle } from "react-native";
 
 import WeatherText from "./WeatherText";
 import { getFontScale } from "../shared/Themed";
@@ -12,9 +6,9 @@ import { getFontScale } from "../shared/Themed";
 import Colors from "@/constants/Colors";
 
 interface IProps {
-  value: React.ReactNode;
-  unit: React.ReactNode;
-  style?: StyleProp<ViewStyle>;
+  value: string | number;
+  unit: string;
+  style?: ViewStyle;
   textStyle?: TextStyle;
 }
 
@@ -29,7 +23,6 @@ export default function WeatherTemperature({
     <View style={[style, styles.container]}>
       <WeatherText
         style={[
-          styles.value,
           textStyle,
           { fontSize: getFontScale(textStyle?.fontSize || 16) },
         ]}
@@ -39,7 +32,6 @@ export default function WeatherTemperature({
 
       <WeatherText
         style={[
-          styles.unit,
           textStyle,
           {
             fontSize: getFontScale(textStyle?.fontSize || 16) / 1.8,
@@ -59,6 +51,4 @@ const styles = StyleSheet.create({
     justifyContent: "center",
     flexDirection: "row",
   },
-  value: {},
-  unit: {},
 });

@@ -3,7 +3,6 @@ import { StyleProp, StyleSheet, View, ViewStyle } from "react-native";
 
 import WeatherTemperature from "./WeatherTemperature";
 import WeatherText from "./WeatherText";
-import Divider from "../shared/Divider";
 
 import Colors from "@/constants/Colors";
 import { useAppSelector } from "@/hooks/ReduxHooks";
@@ -25,29 +24,11 @@ export default function WeatherStatus({ style }: IProps) {
     <View style={[styles.container, style]}>
       <Feather name={weather.data.icon} size={150} color={color.icon} />
 
-      <View style={styles.containerTemperature}>
-        <WeatherTemperature
-          value={weather.temperature.value}
-          unit={`°${weather.temperature.unit}`}
-          textStyle={styles.temperature}
-        />
-
-        <View style={styles.temperatureDetail}>
-          <WeatherTemperature
-            value={weather.temperature.max}
-            unit={`°${weather.temperature.unit}`}
-            textStyle={styles.minMax}
-          />
-
-          <Divider color={color.borderColor} />
-
-          <WeatherTemperature
-            value={weather.temperature.min}
-            unit={`°${weather.temperature.unit}`}
-            textStyle={styles.minMax}
-          />
-        </View>
-      </View>
+      <WeatherTemperature
+        value={weather.temperature.value}
+        unit={`°${weather.temperature.unit}`}
+        textStyle={styles.temperature}
+      />
 
       <WeatherText style={styles.description}>
         {weather.data.description}
@@ -64,22 +45,8 @@ const styles = StyleSheet.create({
     alignItems: "center",
   },
 
-  containerTemperature: {
-    flexDirection: "row",
-  },
-
-  temperatureDetail: {
-    marginHorizontal: 8,
-    flexDirection: "column",
-    justifyContent: "center",
-  },
-
   temperature: {
     fontSize: 76,
-  },
-
-  minMax: {
-    fontSize: 26,
   },
 
   description: {

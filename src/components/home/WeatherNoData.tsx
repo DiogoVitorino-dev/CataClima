@@ -20,6 +20,7 @@ export default function WeatherNoData() {
   const handleUseMyLocation = async () => {
     try {
       const coords = await LocationService.getMyLocation();
+
       dispatch(WeatherThunks.weatherAdded(coords));
     } catch (error: any) {
       switch (error.message) {

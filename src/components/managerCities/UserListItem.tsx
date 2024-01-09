@@ -32,9 +32,9 @@ export default function UserListItem({
       />
       {current ? (
         <FontAwesome5
-          name="map-marker-alt"
+          name="dot-circle"
           color={color.icon}
-          size={20}
+          size={15}
           style={styles.currentIndicator}
         />
       ) : null}

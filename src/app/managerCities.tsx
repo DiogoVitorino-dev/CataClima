@@ -16,6 +16,7 @@ import IWeather from "@/models/WeatherModel";
 import { CitiesService } from "@/services/CitiesService";
 import { WeathersSelectors } from "@/store/weather/WeatherSelectors";
 import { WeatherThunks } from "@/store/weather/WeatherThunks";
+import { StatusBar } from "expo-status-bar";
 
 export default function ManagerCities() {
   const [searchText, setSearchText] = useState("");
@@ -61,6 +62,7 @@ export default function ManagerCities() {
 
   return (
     <View style={styles.container}>
+      <StatusBar translucent style="auto" />
       <SearchBar
         placeholder={Strings.placeholders.searchCities}
         onChangeText={searchTextChanged}

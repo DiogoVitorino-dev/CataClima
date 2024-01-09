@@ -32,12 +32,10 @@ export default {
     icon: "#ffffff",
   },
   gradient: {
-    fire: ["#F29D52", "#BF3124", "#591414"],
     night: ["#011526", "#012340", "#011221"],
 
     snowy: ["#F0F2F2", "#BFCFD9", "#5E7B8C"],
     stormy: ["#687273", "#4F5859", "#212526"],
-    dusty: ["#F2CDAC", "#BF8C60", "#8C633F"],
     default: ["#46535A", "#647681"],
     sunny: ["#D9D3CA", "#789EBF", "#5B83A6", "#37648C"],
     cloudy: ["#BDC7D6", "#8C94A1", "#5B6470", "#323640"],

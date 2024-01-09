@@ -41,10 +41,7 @@ export default function Button({
       >
         {({ pressed }) => (
           <Text
-            style={[
-              styles.label,
-              { opacity: pressed ? 0.5 : 1, color: textStyle.color },
-            ]}
+            style={[styles.label, textStyle, { opacity: pressed ? 0.5 : 1 }]}
           >
             {label}
           </Text>
