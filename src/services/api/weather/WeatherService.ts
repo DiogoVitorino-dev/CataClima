@@ -35,7 +35,7 @@ const getWeatherData = async (coords: ICoordinates, id = "") => {
         description: current.condition.text,
         icon: getWeatherTheme(conditionApp, current.is_day === 0).icon,
         isNight: current.is_day === 0,
-        timestamp: new Date(location.localtime).toISOString(),
+        timestamp: new Date().toISOString(),
       },
       humidity: {
         value: toFixed(current.humidity),
