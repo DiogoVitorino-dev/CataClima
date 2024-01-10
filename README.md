@@ -8,6 +8,19 @@
 ## [Preview Android (APK)](https://github.com/DiogoVitorino-dev/CataClima/releases/tag/0.2.0-alpha) 🤖 
 ## [Preview IOS](https://github.com/DiogoVitorino-dev/CataClima/releases/tag/0.2.0-alpha) 🍏
 
+### Web 🖥️
+
+Noite             |  Céu Claro         
+:-------------------------:|:-------------------------:
+![](https://i.ibb.co/mJbGCKC/tokyo-Home-Web.png)  |  ![](https://i.ibb.co/tQ4KWYc/rio-De-Janeiro-Home-Mob.png)  
+
+
+### Mobile 📱
+
+Nevando             |  Nublado         |  Lista de cidades
+:-------------------------:|:-------------------------:|:-------------------------:
+![](https://i.ibb.co/RNHkbtK/london-Home-Mob.jpg)  |  ![](https://i.ibb.co/p0KTjNG/sao-Paulo-Home-Mob.jpg)  |  ![](https://i.ibb.co/DfKZJCG/manager-Cities-Mob.jpg)
+
 ## Foi Utilizado:
 - Controle de estados ⚊ [Redux](https://redux.js.org/);
 - Armazenamento de dados ⚊ [Async Storage](https://docs.expo.dev/versions/latest/sdk/async-storage/);
